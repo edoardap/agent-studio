@@ -1,0 +1,133 @@
+.agent-card {
+  background-color: var(--bg-sub-sidebar);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 200px;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.agent-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-color);
+}
+
+.agent-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-sm);
+}
+
+.agent-card-title {
+  font-family: var(--font-title);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.agent-model-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-xl);
+  text-transform: uppercase;
+}
+
+.agent-model-badge.flash {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.agent-model-badge.pro {
+  background-color: #f3e8ff;
+  color: #7c3aed;
+}
+
+.agent-card-description {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: var(--spacing-md);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.agent-card-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
+.agent-skill-tag {
+  background-color: var(--bg-app);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+}
+
+.agent-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border-light);
+  padding-top: var(--spacing-sm);
+  margin-top: auto;
+}
+
+.agent-action-main {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.agent-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.agent-action-btn.chat {
+  background-color: var(--primary-color);
+  color: var(--text-light);
+}
+
+.agent-action-btn.chat:hover {
+  background-color: var(--primary-hover);
+}
+
+.agent-action-btn.share {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.agent-action-btn.share:hover {
+  background-color: var(--primary-light-hover);
+}
+
+.agent-delete-btn {
+  color: var(--text-muted);
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agent-delete-btn:hover {
+  color: var(--danger-color);
+  background-color: var(--danger-bg);
+}

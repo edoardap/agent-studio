@@ -1,0 +1,75 @@
+.agents-page {
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  overflow-y: auto;
+  height: 100%;
+}
+
+.agents-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.agents-page-title-section h2 {
+  font-family: var(--font-title);
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.agents-page-title-section p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.agents-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.agents-search-input {
+  padding: 8px var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  width: 240px;
+  background-color: var(--bg-sub-sidebar);
+}
+
+.agents-filter-select {
+  padding: 8px var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  background-color: var(--bg-sub-sidebar);
+  color: var(--text-secondary);
+}
+
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.agents-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl) 0;
+  text-align: center;
+  color: var(--text-muted);
+  gap: var(--spacing-md);
+}
+
+.agents-empty-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--text-muted);
+}

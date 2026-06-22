@@ -1,0 +1,74 @@
+.step-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.step-tabs {
+  display: flex;
+  justify-content: space-between;
+  overflow-x: auto;
+  gap: var(--spacing-sm);
+  padding-bottom: 6px;
+}
+
+.step-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.step-tab:hover {
+  background-color: var(--primary-light);
+}
+
+.step-tab-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--bg-app);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-fast);
+}
+
+.step-tab.active .step-tab-number {
+  background-color: var(--primary-color);
+  color: var(--text-light);
+  border-color: var(--primary-color);
+}
+
+.step-tab.completed .step-tab-number {
+  background-color: var(--success-color);
+  color: var(--text-light);
+  border-color: var(--success-color);
+}
+
+.step-tab-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.step-tab.active .step-tab-label {
+  color: var(--primary-color);
+  font-weight: 700;
+}

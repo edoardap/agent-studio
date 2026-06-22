@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+app_build/node_modules/
+
+# Production builds
+dist/
+app_build/dist/
+
+# Logs and system files
+*.log
+.DS_Store
+.idea/
+.vscode/
+.env*.local

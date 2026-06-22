@@ -1,0 +1,138 @@
+.chat-bubble-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+  max-width: 85%;
+  animation: fadeIn var(--transition-fast) forwards;
+}
+
+.chat-bubble-container.user {
+  align-self: flex-end;
+}
+
+.chat-bubble-container.assistant,
+.chat-bubble-container.creator {
+  align-self: flex-start;
+}
+
+.chat-bubble-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 0 var(--spacing-xs);
+}
+
+.chat-bubble {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.user .chat-bubble {
+  background-color: var(--primary-color);
+  color: var(--text-light);
+  border-top-right-radius: 2px;
+}
+
+.assistant .chat-bubble,
+.creator .chat-bubble {
+  background-color: var(--bg-sub-sidebar);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-top-left-radius: 2px;
+}
+
+/* Confidence Rate indicator */
+.confidence-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.confidence-bar-bg {
+  width: 80px;
+  height: 6px;
+  background-color: var(--border-color);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.confidence-bar-fg {
+  height: 100%;
+  background-color: var(--primary-color);
+  border-radius: 3px;
+}
+
+.confidence-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--primary-color);
+}
+
+/* Source Chips */
+.sources-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.source-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 4px var(--spacing-sm);
+  background-color: var(--primary-light);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.source-chip-percentage {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* Collapsible reasoning accordion */
+.reasoning-accordion {
+  margin-top: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background-color: var(--bg-app);
+}
+
+.reasoning-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px var(--spacing-md);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background-color: var(--bg-sidebar);
+}
+
+.reasoning-header:hover {
+  background-color: var(--border-color);
+}
+
+.reasoning-body {
+  padding: var(--spacing-md);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  background-color: var(--bg-sub-sidebar);
+  border-top: 1px solid var(--border-color);
+}
