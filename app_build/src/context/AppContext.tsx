@@ -1,9 +1,18 @@
 import React, { createContext, useContext, useState } from 'react';
-import type { Tenant, Agent, Message, Conversation, AgentSpec } from '../types';
+import type { Tenant, Agent, Message, Conversation, AgentSpec, ConversationStateJson, MasterTemplate } from '../types';
+
+type ActiveView = 'home' | 'factory' | 'agents' | 'chat-agent' | 'templates';
 
 interface AppContextType {
-  activeView: 'home' | 'factory' | 'agents' | 'chat-agent';
-  setActiveView: (view: 'home' | 'factory' | 'agents' | 'chat-agent') => void;
+  activeView: ActiveView;
+  setActiveView: (view: ActiveView) => void;
+  // Simple vs Advanced UI mode (progressive disclosure)
+  isAdvanced: boolean;
+  setIsAdvanced: (value: boolean) => void;
+  // Master templates (the fixed prompt skeletons agents are built on top of)
+  masterTemplates: MasterTemplate[];
+  updateMasterTemplate: (key: string, patch: Partial<MasterTemplate>) => void;
+  addMasterTemplate: (template: MasterTemplate) => void;
   tenants: Tenant[];
   activeTenant: Tenant;
   setActiveTenant: (tenant: Tenant) => void;
@@ -24,6 +33,14 @@ interface AppContextType {
   updateAgentIntegrations: (agentId: string, integrations: Agent['integrations']) => void;
   deleteAgent: (agentId: string) => void;
   resetCreatorChat: () => void;
+  toggleAgentActiveStatus: (agentId: string) => void;
+  // Factory new fields
+  creatorMasterTemplateKey: string;
+  setCreatorMasterTemplateKey: (key: string) => void;
+  // Selects a master template AND pre-fills empty spec fields with its defaults.
+  selectCreatorTemplate: (templateName: string) => void;
+  creatorChannel: string;
+  setCreatorChannel: (channel: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -34,11 +51,171 @@ const initialTenants: Tenant[] = [
   { id: '3', name: 'ACME Holding - Vendas' },
 ];
 
+const RUNTIME_SKELETON_BLOCK = `
+---
+[RUNTIME — injetado pelo compilador na execução]
+Estado da conversa: {{state_json}}
+Resumo (summary): {{summary_text}}
+Histórico recente: {{recent_messages}}
+Mensagem atual do usuário: {{user_message}}`;
+
+const initialMasterTemplates: MasterTemplate[] = [
+  {
+    key: 'Agente de Vendas',
+    name: 'Agente de Vendas',
+    icon: '💼',
+    description: 'Esqueleto comercial: qualificação de leads, cotação e follow-up.',
+    specDefaults: {
+      context: { segment: 'Comercial / Vendas' },
+      behavior: { behaviour_rules: 'Seja consultivo, objetivo e oriente para a próxima etapa da venda.' },
+      planning: {
+        roteiro: 'Qualificar lead -> Entender necessidade -> Apresentar solução -> Cotação -> Follow-up',
+        default_agent_stage: 'qualificacao',
+        default_current_goal: 'Qualificar o lead',
+      },
+      response: { output_rules: 'Mensagens curtas, no máximo uma pergunta por vez e com CTA claro.' },
+    },
+    promptSkeleton: `# AGENT_SYSTEM — Template Master: Vendas
+Você é {{identity.agent_name}}, da {{context.company_name}} (segmento: {{context.segment}}).
+Perfil: {{identity.agent_profile}}
+Objetivo principal: {{identity.agent_goal}}
+
+## Comportamento
+Idioma: {{behavior.language}} · Limite: {{behavior.max_chars}} caracteres
+Regras de tom: {{behavior.behaviour_rules}}
+
+## Política & Segurança
+{{security.security_rules}}
+
+## Roteiro de Vendas (Planning)
+{{planning.roteiro}}
+Regras de decisão: {{planning.decision_rules}}
+
+## Ferramentas (Action)
+{{action.tools}}
+
+## Formato de Resposta
+{{response.task}}
+{{response.output_rules}}${RUNTIME_SKELETON_BLOCK}`,
+  },
+  {
+    key: 'Agente de Suporte',
+    name: 'Agente de Suporte',
+    icon: '🛠️',
+    description: 'Esqueleto de atendimento técnico: triagem, diagnóstico e resolução.',
+    specDefaults: {
+      context: { segment: 'Suporte / Atendimento' },
+      behavior: { behaviour_rules: 'Seja claro, paciente e resolutivo. Confirme o entendimento antes de propor solução.' },
+      security: { security_rules: 'Nunca exponha dados internos de outros clientes.' },
+      planning: {
+        roteiro: 'Triagem -> Diagnóstico -> Solução -> Confirmar resolução',
+        default_agent_stage: 'triagem',
+        default_current_goal: 'Triagem do atendimento',
+      },
+      response: { output_rules: 'Use passo a passo numerado quando for instrução técnica.' },
+    },
+    promptSkeleton: `# AGENT_SYSTEM — Template Master: Suporte
+Você é {{identity.agent_name}}, suporte da {{context.company_name}}.
+Perfil: {{identity.agent_profile}}
+Objetivo: {{identity.agent_goal}}
+
+## Comportamento
+Idioma: {{behavior.language}} · Limite: {{behavior.max_chars}} caracteres
+{{behavior.behaviour_rules}}
+
+## Segurança
+{{security.security_rules}}
+
+## Roteiro de Atendimento
+{{planning.roteiro}}
+
+## Bases & Ferramentas
+{{action.tools}}
+
+## Resposta
+{{response.output_rules}}${RUNTIME_SKELETON_BLOCK}`,
+  },
+  {
+    key: 'Agente de Onboarding',
+    name: 'Agente de Onboarding',
+    icon: '🚀',
+    description: 'Esqueleto de boas-vindas: dúvidas de políticas, processos e cultura.',
+    specDefaults: {
+      context: { segment: 'Recursos Humanos' },
+      behavior: { behaviour_rules: 'Acolha com empatia e simplicidade; evite jargão.' },
+      planning: {
+        roteiro: 'Identificar dúvida -> Buscar política -> Responder -> Oferecer próximo passo',
+        default_agent_stage: 'atendimento',
+        default_current_goal: 'Esclarecer dúvida do colaborador',
+      },
+      response: { output_rules: 'No máximo 2 parágrafos, com links úteis quando houver.' },
+    },
+    promptSkeleton: `# AGENT_SYSTEM — Template Master: Onboarding
+Você é {{identity.agent_name}}, da área de {{context.segment}} da {{context.company_name}}.
+{{identity.agent_introduction}}
+Objetivo: {{identity.agent_goal}}
+
+## Comportamento
+Idioma: {{behavior.language}} · Limite: {{behavior.max_chars}} caracteres · Empatia em primeiro lugar.
+{{behavior.behaviour_rules}}
+
+## Segurança
+{{security.security_rules}}
+
+## Roteiro
+{{planning.roteiro}}
+
+## Ferramentas
+{{action.tools}}
+
+## Resposta
+{{response.output_rules}}${RUNTIME_SKELETON_BLOCK}`,
+  },
+  {
+    key: 'Começar do zero',
+    name: 'Começar do zero',
+    icon: '📄',
+    description: 'Esqueleto neutro, sem defaults de um tipo específico. Construa o agente do seu jeito com o copiloto.',
+    // Sem specDefaults: não pré-preenche nada — o usuário (ou o copiloto) preenche tudo.
+    promptSkeleton: `# AGENT_SYSTEM — Template Base (genérico)
+Você é {{identity.agent_name}}, da {{context.company_name}}.
+{{identity.agent_introduction}}
+Objetivo: {{identity.agent_goal}}
+
+## Comportamento
+Idioma: {{behavior.language}} · Limite: {{behavior.max_chars}} caracteres
+{{behavior.behaviour_rules}}
+
+## Segurança
+{{security.security_rules}}
+
+## Planejamento
+{{planning.roteiro}}
+
+## Ferramentas
+{{action.tools}}
+
+## Resposta
+{{response.task}}
+{{response.output_rules}}${RUNTIME_SKELETON_BLOCK}`,
+  },
+];
+
+const defaultStateJson: ConversationStateJson = {
+  current_stage: 'triagem',
+  user_intent: 'aguardando_input',
+  current_goal: 'Iniciar atendimento',
+  next_action: 'aguardar_mensagem',
+};
+
 const initialAgents: Agent[] = [
   {
     id: 'agent-1',
     model: 'Gemini 3.5 Pro',
     temperature: 0.2,
+    master_template_key: 'Agente de Suporte',
+    is_active: true,
+    channel: 'Web',
     spec: {
       identity: {
         agent_name: 'Atena Knowledge Agent',
@@ -96,6 +273,9 @@ const initialAgents: Agent[] = [
     id: 'agent-2',
     model: 'Gemini 3.5 Flash',
     temperature: 0.4,
+    master_template_key: 'Agente de Onboarding',
+    is_active: true,
+    channel: 'WhatsApp',
     spec: {
       identity: {
         agent_name: 'Assistente de Onboarding',
@@ -195,32 +375,53 @@ const defaultSpec: AgentSpec = {
   },
 };
 
+const makeInitialCreatorConversation = (): Conversation => ({
+  id: 'creator-chat',
+  agentId: 'creator',
+  title: 'Chat com o Agente Criador',
+  messages: [
+    {
+      id: 'msg-start',
+      sender: 'creator',
+      content: 'Olá! Eu sou o seu **Copiloto de Criação**. Descreva a sua ideia em linguagem natural e eu irei preencher e organizar a especificação nas camadas ao lado automaticamente!',
+      timestamp: new Date().toISOString(),
+    }
+  ],
+  updatedAt: new Date().toISOString(),
+  state_json: defaultStateJson,
+  summary_text: '',
+});
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeView, setActiveView] = useState<'home' | 'factory' | 'agents' | 'chat-agent'>('factory');
+  const [activeView, setActiveView] = useState<ActiveView>('factory');
+  const [isAdvanced, setIsAdvancedState] = useState<boolean>(
+    () => localStorage.getItem('agentstudio.mode') === 'advanced'
+  );
+  const [masterTemplates, setMasterTemplates] = useState<MasterTemplate[]>(initialMasterTemplates);
   const [activeTenant, setActiveTenant] = useState<Tenant>(initialTenants[0]);
+
+  const setIsAdvanced = (value: boolean) => {
+    setIsAdvancedState(value);
+    localStorage.setItem('agentstudio.mode', value ? 'advanced' : 'simple');
+  };
+
+  const updateMasterTemplate = (key: string, patch: Partial<MasterTemplate>) => {
+    setMasterTemplates(prev => prev.map(t => (t.key === key ? { ...t, ...patch } : t)));
+  };
+
+  const addMasterTemplate = (template: MasterTemplate) => {
+    setMasterTemplates(prev => [...prev, template]);
+  };
   const [agents, setAgents] = useState<Agent[]>(initialAgents);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [creatorSpec, setCreatorSpec] = useState<AgentSpec>(defaultSpec);
   const [creatorStep, setCreatorStep] = useState<number>(0);
   const [lastUpdatedFields, setLastUpdatedFields] = useState<Record<string, string[]>>({});
+  const [creatorMasterTemplateKey, setCreatorMasterTemplateKey] = useState<string>('Agente de Vendas');
+  const [creatorChannel, setCreatorChannel] = useState<string>('Web');
 
-  const initialCreatorConversation: Conversation = {
-    id: 'creator-chat',
-    agentId: 'creator',
-    title: 'Chat com o Agente Criador',
-    messages: [
-      {
-        id: 'msg-start',
-        sender: 'creator',
-        content: 'Olá! Eu sou o seu **Copiloto de Criação**. Descreva a sua ideia em linguagem natural e eu irei preencher e organizar a especificação nas camadas ao lado automaticamente!',
-        timestamp: new Date().toISOString(),
-      }
-    ],
-    updatedAt: new Date().toISOString(),
-  };
-
-  const [creatorConversation, setCreatorConversation] = useState<Conversation>(initialCreatorConversation);
+  const [creatorConversation, setCreatorConversation] = useState<Conversation>(makeInitialCreatorConversation());
 
   const clearLastUpdatedFields = () => setLastUpdatedFields({});
 
@@ -232,6 +433,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         [field]: value
       }
     }));
+  };
+
+  // Select a template and pre-fill ONLY empty spec fields with its defaults
+  // (never overwrites values the user already typed). Highlights the filled fields.
+  const selectCreatorTemplate = (templateName: string) => {
+    setCreatorMasterTemplateKey(templateName);
+
+    const tpl = masterTemplates.find(t => t.name === templateName);
+    if (!tpl?.specDefaults) return;
+
+    const next: AgentSpec = { ...creatorSpec };
+    const filled: Record<string, string[]> = {};
+
+    (Object.keys(tpl.specDefaults) as (keyof AgentSpec)[]).forEach(layer => {
+      const layerDefaults = tpl.specDefaults![layer] as Record<string, any>;
+      const current = { ...(creatorSpec[layer] as Record<string, any>) };
+
+      Object.keys(layerDefaults).forEach(field => {
+        const curVal = current[field];
+        const isEmpty =
+          curVal === '' ||
+          curVal === undefined ||
+          curVal === null ||
+          (Array.isArray(curVal) && curVal.length === 0);
+
+        if (isEmpty) {
+          current[field] = layerDefaults[field];
+          if (!filled[layer]) filled[layer] = [];
+          filled[layer].push(field);
+        }
+      });
+
+      (next as any)[layer] = current;
+    });
+
+    setCreatorSpec(next);
+    if (Object.keys(filled).length > 0) setLastUpdatedFields(filled);
   };
 
   // Helper to check what layers are still empty
@@ -464,6 +702,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: `Chat com ${activeAgent.spec.identity.agent_name}`,
         messages: [userMsg],
         updatedAt: new Date().toISOString(),
+        state_json: {
+          current_stage: activeAgent.spec.planning.default_agent_stage || 'triagem',
+          user_intent: 'aguardando_analise',
+          current_goal: activeAgent.spec.planning.default_current_goal || 'Atendimento inicial',
+          next_action: activeAgent.spec.planning.default_next_action || 'processar_input',
+        },
+        summary_text: '',
       };
       updatedConvs.push(conversation);
     } else {
@@ -474,6 +719,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setConversations(updatedConvs);
 
+    // Simulate state update after sending message
     setTimeout(() => {
       let reasoning = `Analisando a solicitação do usuário com base nas diretrizes de comportamento do agente "${activeAgent.spec.identity.agent_name}". Cruzando dados com as ferramentas disponíveis: [${activeAgent.spec.action.tools.join(', ')}].`;
       let sources: string[] = [];
@@ -501,12 +747,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         reasoning,
       };
 
+      // Simulate state_json update after agent responds
+      const stageOptions = ['qualificacao', 'apresentacao', 'resolucao', 'encerramento', 'escalonamento'];
+      const intentOptions = ['buscar_informacao', 'solicitar_suporte', 'reclamacao', 'elogio', 'duvida_geral'];
+      const nextActionOptions = ['consultar_base', 'escalonar_humano', 'oferecer_link', 'solicitar_confirmacao', 'encerrar_atendimento'];
+
+      const newStage = stageOptions[Math.floor(Math.random() * stageOptions.length)];
+      const newIntent = intentOptions[Math.floor(Math.random() * intentOptions.length)];
+      const newGoal = `Resolver: "${content.substring(0, 40)}${content.length > 40 ? '...' : ''}"`;
+      const newNextAction = nextActionOptions[Math.floor(Math.random() * nextActionOptions.length)];
+
+      const newSummary = `Usuário perguntou sobre: "${content.substring(0, 60)}${content.length > 60 ? '...' : ''}". Agente identificou intenção de ${newIntent.replace(/_/g, ' ')} e está na fase de ${newStage.replace(/_/g, ' ')}. Resposta gerada com ${confidence}% de confiança usando ${sources.length} fonte(s).`;
+
       setConversations(prev => prev.map(c => {
         if (c.agentId === agentId) {
           return {
             ...c,
             messages: [...c.messages, agentMsg],
             updatedAt: new Date().toISOString(),
+            state_json: {
+              current_stage: newStage,
+              user_intent: newIntent,
+              current_goal: newGoal,
+              next_action: newNextAction,
+            },
+            summary_text: newSummary,
           };
         }
         return c;
@@ -524,6 +789,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       spec: { ...creatorSpec },
       status: 'active',
       createdAt: new Date().toISOString(),
+      master_template_key: creatorMasterTemplateKey,
+      is_active: true,
+      channel: creatorChannel,
       integrations: {
         discord: false,
         telegram: false,
@@ -552,11 +820,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const toggleAgentActiveStatus = (agentId: string) => {
+    setAgents(prev => prev.map(a => a.id === agentId ? { ...a, is_active: !a.is_active } : a));
+    setSelectedAgent(prev => prev && prev.id === agentId ? { ...prev, is_active: !prev.is_active } : prev);
+  };
+
   const resetCreatorChat = () => {
     setCreatorSpec(defaultSpec);
     setCreatorStep(0);
-    setCreatorConversation(initialCreatorConversation);
+    setCreatorConversation(makeInitialCreatorConversation());
     setLastUpdatedFields({});
+    setCreatorMasterTemplateKey(initialMasterTemplates[0].name);
+    setCreatorChannel('Web');
   };
 
   return (
@@ -564,6 +839,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         activeView,
         setActiveView,
+        isAdvanced,
+        setIsAdvanced,
+        masterTemplates,
+        updateMasterTemplate,
+        addMasterTemplate,
         tenants: initialTenants,
         activeTenant,
         setActiveTenant,
@@ -584,6 +864,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateAgentIntegrations,
         deleteAgent,
         resetCreatorChat,
+        toggleAgentActiveStatus,
+        creatorMasterTemplateKey,
+        setCreatorMasterTemplateKey,
+        selectCreatorTemplate,
+        creatorChannel,
+        setCreatorChannel,
       }}
     >
       {children}

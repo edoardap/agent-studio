@@ -17,11 +17,21 @@ export const Factory: React.FC = () => {
     updateSpecField,
     sendMessageToCreator, 
     createAgentFromSpec, 
-    resetCreatorChat 
+    resetCreatorChat,
+    creatorMasterTemplateKey,
+    selectCreatorTemplate,
+    creatorChannel,
+    setCreatorChannel,
+    masterTemplates,
+    setActiveView,
+    setIsAdvanced,
   } = useApp();
+
+  const selectedTemplate = masterTemplates.find(t => t.name === creatorMasterTemplateKey);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [newTool, setNewTool] = useState('');
+  const [showSkeleton, setShowSkeleton] = useState(false);
   
   // Local state to manage active glowing highlight animations
   const [activeHighlights, setActiveHighlights] = useState<Record<string, boolean>>({});
@@ -78,6 +88,63 @@ export const Factory: React.FC = () => {
         return (
           <div className="spec-form-section fade-in">
             <span className="spec-form-section-title">1. Identidade</span>
+
+            {/* Template Master Selector */}
+            <div className="form-group">
+              <div className="field-label-container">
+                <label className="form-label">🏗️ Template Master</label>
+                <span className="factory-badge">Fábrica</span>
+              </div>
+              <select
+                className="form-input form-select"
+                value={creatorMasterTemplateKey}
+                onChange={(e) => selectCreatorTemplate(e.target.value)}
+              >
+                {masterTemplates.map(t => (
+                  <option key={t.key} value={t.name}>{t.icon} {t.name}</option>
+                ))}
+              </select>
+
+              {selectedTemplate && (
+                <div className="template-hint-card">
+                  <p className="template-hint-desc">{selectedTemplate.description}</p>
+                  <button
+                    type="button"
+                    className="template-hint-toggle"
+                    onClick={() => setShowSkeleton((s) => !s)}
+                  >
+                    {showSkeleton ? 'Ocultar esqueleto do prompt' : 'Ver esqueleto do prompt'}
+                  </button>
+                  {showSkeleton && (
+                    <pre className="template-hint-skeleton">{selectedTemplate.promptSkeleton}</pre>
+                  )}
+                </div>
+              )}
+
+              <button
+                type="button"
+                className="template-create-link"
+                onClick={() => { setIsAdvanced(true); setActiveView('templates'); }}
+              >
+                + Criar ou editar templates em Templates Master
+              </button>
+            </div>
+
+            {/* Channel Input */}
+            <div className="form-group">
+              <div className="field-label-container">
+                <label className="form-label">📡 Canal de Entrega</label>
+                <span className="factory-badge">Fábrica</span>
+              </div>
+              <input
+                type="text"
+                className="form-input"
+                value={creatorChannel}
+                onChange={(e) => setCreatorChannel(e.target.value)}
+                placeholder="Ex: Web, WhatsApp, Internal"
+              />
+            </div>
+
             <div className="form-group">
               <div className="field-label-container">
                 <label className="form-label">Nome do Agente</label>

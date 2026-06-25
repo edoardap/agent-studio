@@ -2,22 +2,30 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { ChatBubble } from '../components/chat/ChatBubble';
 import { ChatInput } from '../components/chat/ChatInput';
-import { Plus, Pin, MessageSquare, ArrowLeft } from 'lucide-react';
+import { Plus, ArrowLeft, Code, X, Cpu, FileText, Zap } from 'lucide-react';
 import './ChatAgent.css';
 
 export const ChatAgent: React.FC = () => {
-  const { 
-    selectedAgent, 
-    conversations, 
-    sendMessageToAgent, 
-    setActiveView 
+  const {
+    selectedAgent,
+    conversations,
+    sendMessageToAgent,
+    setActiveView
   } = useApp();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
   // Local state for active conversation and selected knowledge bases
   const [activeModel, setActiveModel] = useState(selectedAgent?.model || 'Gemini 3.5 Flash');
   const [selectedKBs, setSelectedKBs] = useState<Record<string, boolean>>({});
+  const [showPromptModal, setShowPromptModal] = useState(false);
+
+  // Observability glow state
+  const [stateGlowing, setStateGlowing] = useState(false);
+  const [summaryGlowing, setSummaryGlowing] = useState(false);
+
+  // Track the previous message count to detect new messages
+  const prevMsgCountRef = useRef<number>(0);
 
   // Find or create current active conversation
   const activeConversation = conversations.find(c => c.agentId === selectedAgent?.id) || {
@@ -27,18 +35,43 @@ export const ChatAgent: React.FC = () => {
     messages: [
       {
         id: 'msg-welcome',
-        sender: 'assistant',
+        sender: 'assistant' as const,
         content: `Olá! Eu sou o **${selectedAgent?.spec.identity.agent_name}**. Fui configurado como seu agente inteligente. Como posso ajudar você hoje?`,
         timestamp: new Date().toISOString(),
       }
     ],
     updatedAt: new Date().toISOString(),
+    state_json: {
+      current_stage: selectedAgent?.spec.planning.default_agent_stage || 'triagem',
+      user_intent: 'aguardando_input',
+      current_goal: selectedAgent?.spec.planning.default_current_goal || 'Iniciar atendimento',
+      next_action: selectedAgent?.spec.planning.default_next_action || 'aguardar_mensagem',
+    },
+    summary_text: '',
   };
 
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeConversation.messages]);
+
+  // Trigger observability glow when messages change
+  useEffect(() => {
+    const currentCount = activeConversation.messages.length;
+    if (currentCount > prevMsgCountRef.current && prevMsgCountRef.current > 0) {
+      // New message arrived — trigger glow after a short delay (simulating async state update)
+      const glowTimer = setTimeout(() => {
+        setStateGlowing(true);
+        setSummaryGlowing(true);
+        setTimeout(() => {
+          setStateGlowing(false);
+          setSummaryGlowing(false);
+        }, 3000);
+      }, 1300); // slightly after the agent reply delay
+      return () => clearTimeout(glowTimer);
+    }
+    prevMsgCountRef.current = currentCount;
+  }, [activeConversation.messages.length]);
 
   // Handle setting active knowledge bases
   useEffect(() => {
@@ -68,15 +101,48 @@ export const ChatAgent: React.FC = () => {
   }
 
   const selectedCount = Object.values(selectedKBs).filter(Boolean).length;
+  const { state_json, summary_text } = activeConversation;
+
+  // Build the simulated compiled prompt text
+  const compiledPromptText = `[SYSTEM — Prompt Compilado]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Template:        ${selectedAgent.master_template_key}
+Channel:         ${selectedAgent.channel}
+Model Override:  ${activeModel}
+
+[IDENTITY]
+${JSON.stringify(selectedAgent.spec.identity, null, 2)}
+
+[BEHAVIOR]
+${JSON.stringify(selectedAgent.spec.behavior, null, 2)}
+
+[SECURITY]
+${JSON.stringify(selectedAgent.spec.security, null, 2)}
+
+[RUNTIME STATE]
+${JSON.stringify(state_json, null, 2)}
+
+[SUMMARY]
+${summary_text || '(sem resumo ainda — aguardando primeira interação)'}
+
+[RECENT MESSAGES]
+${activeConversation.messages
+  .slice(-4)
+  .map(m => `[${m.sender.toUpperCase()}] ${m.content.substring(0, 120)}${m.content.length > 120 ? '...' : ''}`)
+  .join('\n')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[END OF COMPILED PROMPT]`;
 
   return (
     <div className="chat-agent-page fade-in">
-      
+
       {/* Second Column: Sub Sidebar */}
       <div className="chat-sub-sidebar">
-        
-        {/* Return Button for Mobile/Tablet */}
-        <button 
+
+        {/* Return Button */}
+        <button
           onClick={() => setActiveView('agents')}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '4px' }}
         >
@@ -85,7 +151,7 @@ export const ChatAgent: React.FC = () => {
         </button>
 
         {/* New Conversation Button */}
-        <button 
+        <button
           className="new-conv-btn"
           onClick={() => alert('Nova conversa iniciada (Mock).')}
         >
@@ -95,9 +161,9 @@ export const ChatAgent: React.FC = () => {
 
         {/* Conversation Search */}
         <div style={{ position: 'relative' }}>
-          <input 
-            type="text" 
-            placeholder="Buscar conversas..." 
+          <input
+            type="text"
+            placeholder="Buscar conversas..."
             className="conv-search-input"
           />
         </div>
@@ -106,7 +172,7 @@ export const ChatAgent: React.FC = () => {
         <div className="sub-sidebar-section">
           <div className="sub-sidebar-title">
             <span>Bases de Conhecimento</span>
-            <button 
+            <button
               className="sub-sidebar-action"
               onClick={() => {
                 const allChecked = Object.values(selectedKBs).every(Boolean);
@@ -120,10 +186,9 @@ export const ChatAgent: React.FC = () => {
               {Object.values(selectedKBs).every(Boolean) ? 'Limpar' : 'Todas'}
             </button>
           </div>
-          
+
           <div className="kb-list">
             {selectedAgent.spec.action.tools.map((skill, index) => {
-              // Mocking document counts for visual interest
               const docCount = 12 + (index * 42) + (index * 7);
               return (
                 <label key={index} className="kb-item">
@@ -143,46 +208,74 @@ export const ChatAgent: React.FC = () => {
           </div>
         </div>
 
-        {/* Pinned conversations */}
-        <div className="sub-sidebar-section">
-          <div className="sub-sidebar-title">Fixadas</div>
-          <div className="conv-list">
-            <button className="conv-item active">
-              <Pin className="conv-item-icon" />
-              <span className="conv-item-title">{activeConversation.messages[activeConversation.messages.length - 1]?.content.substring(0, 30) || 'Política de férias para estagiários'}...</span>
-            </button>
+        {/* ── Observability Card: Estado da Conversa ── */}
+        <div className={`obs-card ${stateGlowing ? 'updated-glow-card' : ''}`}>
+          <div className="obs-card-header">
+            <Cpu size={13} />
+            <span>Estado da Conversa</span>
+          </div>
+          <div className="obs-card-body">
+            <div className="obs-field">
+              <span className="obs-label">Fase</span>
+              <span className="obs-value stage">{state_json.current_stage}</span>
+            </div>
+            <div className="obs-field">
+              <span className="obs-label">Intenção</span>
+              <span className="obs-value">{state_json.user_intent}</span>
+            </div>
+            <div className="obs-field">
+              <span className="obs-label">Objetivo</span>
+              <span className="obs-value">{state_json.current_goal}</span>
+            </div>
+            <div className="obs-field">
+              <span className="obs-label">Próxima Ação</span>
+              <span className="obs-value action">{state_json.next_action}</span>
+            </div>
           </div>
         </div>
 
-        {/* Recent conversations */}
-        <div className="sub-sidebar-section">
-          <div className="sub-sidebar-title">Últimos 7 dias</div>
-          <div className="conv-list">
-            <button className="conv-item" onClick={() => alert('Conversa Antiga (Mock): Resumo do contrato com a Acme.')}>
-              <MessageSquare className="conv-item-icon" />
-              <span className="conv-item-title">Resumo do contrato com a Acme</span>
-            </button>
-            <button className="conv-item" onClick={() => alert('Conversa Antiga (Mock): Battlecard vs concorrente X.')}>
-              <MessageSquare className="conv-item-icon" />
-              <span className="conv-item-title">Battlecard vs concorrente X</span>
-            </button>
+        {/* ── Observability Card: Resumo ── */}
+        <div className={`obs-card ${summaryGlowing ? 'updated-glow-card' : ''}`}>
+          <div className="obs-card-header">
+            <FileText size={13} />
+            <span>Resumo (Summary)</span>
+          </div>
+          <div className="obs-card-body">
+            {summary_text ? (
+              <p className="obs-summary-text">{summary_text}</p>
+            ) : (
+              <p className="obs-summary-empty">Nenhum resumo ainda. Envie uma mensagem para gerar o estado vivo.</p>
+            )}
           </div>
         </div>
+
       </div>
 
       {/* Third Column: Main Chat Panel */}
       <div className="chat-main-panel">
-        
+
         {/* Header bar */}
         <div className="chat-panel-header">
           <div className="chat-header-info">
-            <h3 className="chat-header-title">{activeConversation.messages[activeConversation.messages.length - 1]?.content.substring(0, 35) || 'Nova Conversa'}...</h3>
+            <h3 className="chat-header-title">
+              {activeConversation.messages[activeConversation.messages.length - 1]?.content.substring(0, 35) || 'Nova Conversa'}...
+            </h3>
             <span className="chat-header-sub">
-              {selectedCount} base(s) selecionada(s) • perfil de recuperação ativo
+              {selectedCount} base(s) • {selectedAgent.master_template_key} • {selectedAgent.channel}
             </span>
           </div>
 
           <div className="chat-header-actions">
+            {/* Inspect Prompt Button */}
+            <button
+              className="inspect-prompt-btn"
+              onClick={() => setShowPromptModal(true)}
+              title="Inspecionar Prompt Compilado"
+            >
+              <Code size={14} />
+              <span>Inspecionar Prompt</span>
+            </button>
+
             <select
               className="chat-model-select"
               value={activeModel}
@@ -210,6 +303,31 @@ export const ChatAgent: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* ── Prompt Inspector Modal ── */}
+      {showPromptModal && (
+        <div className="prompt-modal-overlay" onClick={() => setShowPromptModal(false)}>
+          <div className="prompt-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="prompt-modal-header">
+              <div className="prompt-modal-title">
+                <Zap size={16} />
+                <span>Prompt Compilado — Envio Real para LLM</span>
+              </div>
+              <button className="prompt-modal-close" onClick={() => setShowPromptModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="prompt-modal-body">
+              <div className="prompt-modal-meta">
+                <span className="prompt-meta-chip">Template: <strong>{selectedAgent.master_template_key}</strong></span>
+                <span className="prompt-meta-chip">Canal: <strong>{selectedAgent.channel}</strong></span>
+                <span className="prompt-meta-chip">Modelo: <strong>{activeModel}</strong></span>
+              </div>
+              <pre className="prompt-terminal">{compiledPromptText}</pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

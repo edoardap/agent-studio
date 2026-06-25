@@ -3,6 +3,25 @@ export interface Tenant {
   name: string;
 }
 
+export interface MasterTemplate {
+  key: string;
+  name: string;
+  icon: string;
+  description: string;
+  /** Esqueleto base do prompt com placeholders {{camada.campo}} preenchidos pelo compilador. */
+  promptSkeleton: string;
+  /** Valores iniciais sugeridos para a spec ao escolher este template (pré-preenche o formulário). */
+  specDefaults?: {
+    identity?: Partial<AgentSpec['identity']>;
+    behavior?: Partial<AgentSpec['behavior']>;
+    security?: Partial<AgentSpec['security']>;
+    context?: Partial<AgentSpec['context']>;
+    planning?: Partial<AgentSpec['planning']>;
+    action?: Partial<AgentSpec['action']>;
+    response?: Partial<AgentSpec['response']>;
+  };
+}
+
 export interface AgentSpec {
   identity: {
     agent_name: string;
@@ -54,6 +73,9 @@ export interface Agent {
   spec: AgentSpec;
   status: 'active' | 'draft' | 'building';
   createdAt: string;
+  master_template_key: string;
+  is_active: boolean;
+  channel: string;
   integrations: {
     discord: boolean;
     telegram: boolean;
@@ -73,10 +95,19 @@ export interface Message {
   reasoning?: string; // thinking process
 }
 
+export interface ConversationStateJson {
+  current_stage: string;
+  user_intent: string;
+  current_goal: string;
+  next_action: string;
+}
+
 export interface Conversation {
   id: string;
   agentId: string; // The ID of the agent this conversation is with (or "creator" for creator agent)
   title: string;
   messages: Message[];
   updatedAt: string;
+  state_json: ConversationStateJson;
+  summary_text: string;
 }

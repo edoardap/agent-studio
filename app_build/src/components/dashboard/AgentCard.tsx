@@ -11,11 +11,12 @@ interface AgentCardProps {
 }
 
 export const AgentCard: React.FC<AgentCardProps> = ({ agent, onChat, onShare }) => {
-  const { deleteAgent } = useApp();
+  const { deleteAgent, toggleAgentActiveStatus } = useApp();
   const { model } = agent;
   const name = agent.spec.identity.agent_name;
   const description = agent.spec.identity.agent_profile;
   const skills = agent.spec.action.tools;
+  const isActive = agent.is_active;
 
   const isFlash = model.toLowerCase().includes('flash');
 
@@ -26,14 +27,46 @@ export const AgentCard: React.FC<AgentCardProps> = ({ agent, onChat, onShare }) 
     }
   };
 
+  const handleToggle = () => {
+    toggleAgentActiveStatus(agent.id);
+  };
+
   return (
-    <div className="agent-card fade-in">
+    <div className={`agent-card fade-in ${!isActive ? 'agent-card-inactive' : ''}`}>
       <div>
         <div className="agent-card-header">
           <h3 className="agent-card-title">{name}</h3>
-          <span className={`agent-model-badge ${isFlash ? 'flash' : 'pro'}`}>
-            {isFlash ? 'Flash' : 'Pro'}
-          </span>
+          <div className="agent-card-badges">
+            <span className={`agent-model-badge ${isFlash ? 'flash' : 'pro'}`}>
+              {isFlash ? 'Flash' : 'Pro'}
+            </span>
+            <div
+              className="agent-status-control"
+              title={isActive ? 'Desativar agente' : 'Ativar agente'}
+            >
+              <span className={`agent-status-label ${isActive ? 'active' : ''}`}>
+                {isActive ? 'Ativo' : 'Inativo'}
+              </span>
+              <label className="agent-toggle-switch" onClick={(e) => e.stopPropagation()}>
+                <input type="checkbox" checked={isActive} onChange={handleToggle} />
+                <span className="agent-toggle-slider" />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Meta info row: channel + template */}
+        <div className="agent-card-meta">
+          {agent.channel && (
+            <span className="agent-meta-tag">
+              📡 {agent.channel}
+            </span>
+          )}
+          {agent.master_template_key && (
+            <span className="agent-meta-tag template">
+              🏗️ {agent.master_template_key}
+            </span>
+          )}
         </div>
 
         <p className="agent-card-description">{description}</p>
@@ -56,15 +89,17 @@ export const AgentCard: React.FC<AgentCardProps> = ({ agent, onChat, onShare }) 
 
       <div className="agent-card-actions">
         <div className="agent-action-main">
-          <button 
-            className="agent-action-btn chat"
-            onClick={onChat}
+          <button
+            className={`agent-action-btn chat ${!isActive ? 'disabled' : ''}`}
+            onClick={isActive ? onChat : undefined}
+            disabled={!isActive}
+            title={!isActive ? 'Agente inativo. Ative-o para conversar.' : 'Conversar com o agente'}
           >
             <MessageSquare size={14} />
             <span>Conversar</span>
           </button>
-          
-          <button 
+
+          <button
             className="agent-action-btn share"
             onClick={onShare}
           >
@@ -73,13 +108,15 @@ export const AgentCard: React.FC<AgentCardProps> = ({ agent, onChat, onShare }) 
           </button>
         </div>
 
-        <button 
-          className="agent-delete-btn"
-          onClick={handleDelete}
-          title="Deletar Agente"
-        >
-          <Trash2 size={14} />
-        </button>
+        <div className="agent-card-right-actions">
+          <button
+            className="agent-delete-btn"
+            onClick={handleDelete}
+            title="Deletar Agente"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );

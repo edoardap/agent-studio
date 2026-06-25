@@ -254,3 +254,82 @@
   animation: fadeIn var(--transition-fast) forwards;
 }
 
+.factory-badge {
+  background-color: #ede9fe;
+  color: #7c3aed;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-xl);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.form-select {
+  appearance: auto;
+  cursor: pointer;
+  color: var(--text-primary);
+  background-color: var(--bg-app);
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 68, 177, 0.1);
+}
+
+
+/* ── Template Master: hint card + skeleton preview (build flow) ── */
+.template-hint-card {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--primary-light);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.template-hint-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.template-hint-toggle {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.template-hint-toggle:hover {
+  text-decoration: underline;
+}
+
+.template-hint-skeleton {
+  margin-top: 4px;
+  max-height: 220px;
+  overflow: auto;
+  font-family: monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: #d6dbe8;
+  background-color: #1e1e2f;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  white-space: pre-wrap;
+}
+
+.template-create-link {
+  margin-top: var(--spacing-sm);
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.template-create-link:hover {
+  color: var(--primary-color);
+}

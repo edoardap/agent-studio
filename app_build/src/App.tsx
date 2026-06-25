@@ -5,6 +5,7 @@ import { Home } from './pages/Home';
 import { Factory } from './pages/Factory';
 import { AgentsList } from './pages/AgentsList';
 import { ChatAgent } from './pages/ChatAgent';
+import { Templates } from './pages/Templates';
 import './App.css';
 
 function MainAppContent() {
@@ -20,6 +21,8 @@ function MainAppContent() {
         return <AgentsList />;
       case 'chat-agent':
         return <ChatAgent />;
+      case 'templates':
+        return <Templates />;
       default:
         return <Home />;
     }
