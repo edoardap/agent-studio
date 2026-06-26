@@ -13,7 +13,7 @@
 | 2 | Camada de Memória ausente na spec configurável | **Documento + Protótipo** | Alta |
 | 3 | "Criar template" vs "selecionar template" confundidos | **Protótipo** | ✅ Resolvido |
 | 4 | Seleção de template é cega (sem preview/descrição) | **Protótipo** | ✅ Resolvido |
-| 5 | Template master não faz nada (cosmético) | **Protótipo** | Média |
+| 5 | Template master não faz nada (cosmético) | **Protótipo** | ✅ Resolvido |
 | 6 | Não há editar/clonar spec de agente existente | **Protótipo** | Média |
 | 7 | Preview do prompt compilado só existe no chat | **Protótipo** | Baixa |
 | 8 | Barra de progresso mede aba, não completude | **Protótipo** | Baixa |
@@ -75,6 +75,10 @@
 - A Seção 7.1 diz que o template "define a estrutura base"; isso não se reflete.
 - **Recomendação:** o template selecionado deve alimentar o preview do prompt compilado
   (o `promptSkeleton` já existe na tela Templates Master) e, opcionalmente, pré-preencher a spec.
+- ✅ **Resolvido:** o prompt compilado (modal "Inspecionar Prompt") agora **usa o esqueleto do
+  template master** do agente e preenche as lacunas `{{...}}` com os valores da spec + runtime.
+  Trocar de template muda de fato o prompt final, não só o rótulo. (Pré-preenchimento da spec já
+  feito na lacuna #4.)
 
 ## 6. Sem editar/clonar spec de agente existente
 **Falha do protótipo.**

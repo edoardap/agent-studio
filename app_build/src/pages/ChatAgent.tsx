@@ -10,7 +10,8 @@ export const ChatAgent: React.FC = () => {
     selectedAgent,
     conversations,
     sendMessageToAgent,
-    setActiveView
+    setActiveView,
+    masterTemplates
   } = useApp();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -103,37 +104,50 @@ export const ChatAgent: React.FC = () => {
   const selectedCount = Object.values(selectedKBs).filter(Boolean).length;
   const { state_json, summary_text } = activeConversation;
 
-  // Build the simulated compiled prompt text
-  const compiledPromptText = `[SYSTEM — Prompt Compilado]
+  // ── Compilador "Spec to Agent" (simulado) ──
+  // Pega o ESQUELETO do template master e preenche as lacunas {{...}} com os valores
+  // da spec + os dados de runtime da conversa. Isto é o que o compilador real faz.
+  const template = masterTemplates.find(t => t.name === selectedAgent.master_template_key);
+
+  const recentMessages =
+    activeConversation.messages
+      .slice(-6)
+      .map(m => `[${m.sender.toUpperCase()}] ${m.content}`)
+      .join('\n') || '(sem mensagens ainda)';
+
+  const lastUserMessage =
+    [...activeConversation.messages].reverse().find(m => m.sender === 'user')?.content ??
+    '(aguardando primeira mensagem)';
+
+  const runtimeValues: Record<string, string> = {
+    state_json: JSON.stringify(state_json, null, 2),
+    summary_text: summary_text || '(sem resumo ainda — aguardando primeira interação)',
+    recent_messages: recentMessages,
+    user_message: lastUserMessage,
+  };
+
+  // Substitui {{camada.campo}} (spec) e {{token}} (runtime) no esqueleto.
+  const filledSkeleton = (template?.promptSkeleton ?? '(template master não encontrado)').replace(
+    /\{\{\s*([\w.]+)\s*\}\}/g,
+    (_match, path: string) => {
+      if (path in runtimeValues) return runtimeValues[path];
+      const value = path
+        .split('.')
+        .reduce<any>((acc, key) => (acc == null ? acc : acc[key]), selectedAgent.spec);
+      if (value === undefined || value === null || value === '') return `«${path} não preenchido»`;
+      if (Array.isArray(value)) return value.length ? value.map(v => `- ${v}`).join('\n') : '(nenhuma)';
+      return String(value);
+    }
+  );
+
+  const compiledPromptText = `[AGENT_SYSTEM — Prompt Compilado · envio real ao LLM]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Template Master : ${selectedAgent.master_template_key}
+Canal           : ${selectedAgent.channel}
+Modelo          : ${activeModel}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Template:        ${selectedAgent.master_template_key}
-Channel:         ${selectedAgent.channel}
-Model Override:  ${activeModel}
-
-[IDENTITY]
-${JSON.stringify(selectedAgent.spec.identity, null, 2)}
-
-[BEHAVIOR]
-${JSON.stringify(selectedAgent.spec.behavior, null, 2)}
-
-[SECURITY]
-${JSON.stringify(selectedAgent.spec.security, null, 2)}
-
-[RUNTIME STATE]
-${JSON.stringify(state_json, null, 2)}
-
-[SUMMARY]
-${summary_text || '(sem resumo ainda — aguardando primeira interação)'}
-
-[RECENT MESSAGES]
-${activeConversation.messages
-  .slice(-4)
-  .map(m => `[${m.sender.toUpperCase()}] ${m.content.substring(0, 120)}${m.content.length > 120 ? '...' : ''}`)
-  .join('\n')}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[END OF COMPILED PROMPT]`;
+${filledSkeleton}`;
 
   return (
     <div className="chat-agent-page fade-in">

@@ -63,6 +63,51 @@ Estrutura sugerida para o bloco `memory` em `config_json`:
 }
 ```
 
+### Distinção fundamental: configuração de memória vs. dados de memória
+
+Isto costuma confundir, então é o ponto-chave: existem **dois lados** da memória.
+
+| | O quê | Onde fica | Quem usa |
+|---|---|---|---|
+| **Configuração de memória** | As **regras** de como o agente lembra | Spec → bloco `memory` (estático) | Definido na criação do agente |
+| **Dados de memória** | O **conteúdo** lembrado de uma conversa específica | Runtime → `state_json`, `summary_text`, mensagens recentes | Gerado durante cada conversa |
+
+> O bloco `memory` da spec **não guarda mensagens**. Ele guarda as **regras** que dizem ao
+> compilador/runtime *como* lidar com a memória daquela conversa. Os dados de fato (resumo,
+> estado, histórico) vivem no runtime, por conversa.
+
+### Detalhe de cada campo do bloco `memory`
+
+- **`recent_window_size`** (número) — Quantas das últimas mensagens entram literalmente no
+  prompt compilado. É a "janela recente" da Seção 15 (recomendado 6–10). Controla o equilíbrio
+  entre *contexto* (mais mensagens = mais memória curta) e *custo/tamanho do prompt*.
+  Ex.: `8` → o compilador injeta as 8 últimas mensagens da conversa no `{{recent_messages}}`.
+
+- **`enable_summary`** (booleano) — Liga/desliga o resumo contínuo da conversa (`summary_text`).
+  Com `true`, conversas longas são **condensadas** num resumo em vez de mandar todo o histórico;
+  o resumo entra no prompt via `{{summary_text}}`. Com `false`, o agente só usa a janela recente.
+
+- **`summary_strategy`** (texto/enum) — *Como* o resumo é atualizado. Opções típicas:
+  - `"rolling"` — o resumo é reescrito a cada N turnos, sempre acumulando o essencial.
+  - `"on_overflow"` — só resume quando a janela recente "estoura" (passa de `recent_window_size`).
+  - `"manual"` — o resumo só muda quando alguém atualiza explicitamente.
+
+- **`key_facts_to_remember`** (lista de textos) — Fatos **fixos** que o agente deve lembrar
+  *sempre*, independente da janela recente ou do resumo. É a memória de longo prazo **simples**
+  (sem embeddings/busca vetorial — fora do escopo do piloto, Seção 15).
+  Ex.: `["Cliente é Pessoa Jurídica", "Plano contratado: Enterprise"]`.
+
+### Como isso aparece no fluxo (resumido)
+
+1. Na **criação do agente**, o usuário define o bloco `memory` (as regras).
+2. Em **cada conversa**, o runtime mantém `state_json` + `summary_text` + mensagens seguindo
+   essas regras.
+3. O **compilador** lê a configuração e injeta os dados certos no `AGENT_SYSTEM`
+   (janela de tamanho `recent_window_size`, summary se `enable_summary`, e os `key_facts`).
+
+> Para o detalhamento de **todas** as camadas da spec (não só memória), ver
+> [`camadas-da-spec.md`](./camadas-da-spec.md).
+
 ## 3. Texto de substituição para a Seção 8
 
 > Substituir a lista atual da Seção 8 por:
