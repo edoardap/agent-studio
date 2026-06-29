@@ -1,34 +1,29 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { Check } from 'lucide-react';
+import { getLayerStatuses } from '../../utils/promptCompiler';
 import './StepProgress.css';
 
 export const StepProgress: React.FC = () => {
-  const { creatorStep, setCreatorStep } = useApp();
+  const { creatorStep, setCreatorStep, creatorSpec } = useApp();
 
-  const steps = [
-    { label: 'Identidade', index: 0 },
-    { label: 'Comportamento', index: 1 },
-    { label: 'Segurança', index: 2 },
-    { label: 'Contexto', index: 3 },
-    { label: 'Planejamento', index: 4 },
-    { label: 'Ações', index: 5 },
-    { label: 'Resposta', index: 6 },
-  ];
+  // Os checkmarks refletem a COMPLETUDE real de cada camada (não a posição
+  // da aba). A navegação continua livre: dá pra clicar em qualquer passo.
+  const steps = getLayerStatuses(creatorSpec);
 
   return (
     <div className="step-progress-container fade-in">
       <div className="step-tabs">
         {steps.map((step) => {
           const isActive = creatorStep === step.index;
-          const isCompleted = creatorStep > step.index;
-          
+          const isCompleted = step.complete;
+
           return (
             <button
               key={step.index}
               className={`step-tab ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
               onClick={() => setCreatorStep(step.index)}
-              title={step.label}
+              title={isCompleted ? `${step.label} — preenchida` : `${step.label} — pendente`}
               type="button"
             >
               <div className="step-tab-number">

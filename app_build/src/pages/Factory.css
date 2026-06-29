@@ -168,6 +168,60 @@
 }
 
 /* Stepper Actions */
+/* ── Navegação entre camadas (Voltar / Continuar) ── */
+.spec-step-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.spec-step-nav-spacer {
+  flex: 1;
+}
+
+.spec-step-back-btn,
+.spec-step-next-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.spec-step-back-btn {
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-main);
+  color: var(--text-secondary);
+}
+
+.spec-step-back-btn:hover {
+  background-color: var(--primary-light);
+  color: var(--text-primary);
+}
+
+.spec-step-next-btn {
+  background-color: var(--primary-color);
+  color: var(--text-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.spec-step-next-btn:hover {
+  filter: brightness(0.95);
+}
+
+/* Quando a camada atual ainda está incompleta, o "Continuar" fica mais
+   discreto — sem bloquear (a navegação continua livre). */
+.spec-step-next-btn.pending {
+  background-color: var(--bg-main);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+}
+
 .spec-actions {
   display: flex;
   flex-direction: column;
@@ -332,4 +386,58 @@
 
 .template-create-link:hover {
   color: var(--primary-color);
+}
+
+/* ── Editing banner: when loading an existing agent's spec ── */
+.spec-editing-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--primary-color);
+  background-color: var(--primary-light);
+  border: 1px solid var(--primary-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.spec-editing-banner svg {
+  flex-shrink: 0;
+}
+
+.spec-editing-banner strong {
+  font-weight: 600;
+}
+
+.spec-editing-cancel {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+/* ── Completeness hint: what is still missing before building ── */
+.spec-missing-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #92600a;
+  background-color: #fff8e6;
+  border: 1px solid #f5d98a;
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.spec-missing-hint svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.spec-missing-hint strong {
+  font-weight: 600;
 }

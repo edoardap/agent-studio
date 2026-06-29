@@ -1,16 +1,17 @@
 import React from 'react';
 import type { Agent } from '../../types';
 import { useApp } from '../../context/AppContext';
-import { MessageSquare, Share2, Trash2 } from 'lucide-react';
+import { MessageSquare, Share2, Trash2, Pencil } from 'lucide-react';
 import './AgentCard.css';
 
 interface AgentCardProps {
   agent: Agent;
   onChat: () => void;
   onShare: () => void;
+  onEdit: () => void;
 }
 
-export const AgentCard: React.FC<AgentCardProps> = ({ agent, onChat, onShare }) => {
+export const AgentCard: React.FC<AgentCardProps> = ({ agent, onChat, onShare, onEdit }) => {
   const { deleteAgent, toggleAgentActiveStatus } = useApp();
   const { model } = agent;
   const name = agent.spec.identity.agent_name;
@@ -109,6 +110,13 @@ export const AgentCard: React.FC<AgentCardProps> = ({ agent, onChat, onShare }) 
         </div>
 
         <div className="agent-card-right-actions">
+          <button
+            className="agent-edit-btn"
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            title="Editar spec do agente"
+          >
+            <Pencil size={14} />
+          </button>
           <button
             className="agent-delete-btn"
             onClick={handleDelete}

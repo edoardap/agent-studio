@@ -2,16 +2,48 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { ChatBubble } from '../components/chat/ChatBubble';
 import { ChatInput } from '../components/chat/ChatInput';
-import { Plus, ArrowLeft, Code, X, Cpu, FileText, Zap } from 'lucide-react';
+import { Plus, ArrowLeft, Code, X, Cpu, FileText, Zap, Pin, MessageSquare } from 'lucide-react';
+import { compilePromptSkeleton } from '../utils/promptCompiler';
+import type { Conversation } from '../types';
 import './ChatAgent.css';
+
+// Agrupa conversas como no data-studio: "Fixadas" primeiro, depois por recência.
+const groupConversations = (items: Conversation[]) => {
+  const now = Date.now();
+  const day = 86_400_000;
+  const groups: { label: string; items: Conversation[] }[] = [
+    { label: 'Fixadas', items: [] },
+    { label: 'Hoje', items: [] },
+    { label: 'Últimos 7 dias', items: [] },
+    { label: 'Este mês', items: [] },
+    { label: 'Antigas', items: [] },
+  ];
+  for (const c of items) {
+    if (c.pinned) {
+      groups[0].items.push(c);
+      continue;
+    }
+    const age = now - new Date(c.updatedAt).getTime();
+    if (age < day) groups[1].items.push(c);
+    else if (age < 7 * day) groups[2].items.push(c);
+    else if (age < 30 * day) groups[3].items.push(c);
+    else groups[4].items.push(c);
+  }
+  return groups.filter(g => g.items.length > 0);
+};
 
 export const ChatAgent: React.FC = () => {
   const {
     selectedAgent,
     conversations,
+    activeConversationId,
+    setActiveConversationId,
+    startNewConversation,
+    toggleConversationPin,
     sendMessageToAgent,
     setActiveView,
-    masterTemplates
+    masterTemplates,
+    isAdvanced,
   } = useApp();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -20,16 +52,21 @@ export const ChatAgent: React.FC = () => {
   const [activeModel, setActiveModel] = useState(selectedAgent?.model || 'Gemini 3.5 Flash');
   const [selectedKBs, setSelectedKBs] = useState<Record<string, boolean>>({});
   const [showPromptModal, setShowPromptModal] = useState(false);
+  const [convSearch, setConvSearch] = useState('');
 
   // Observability glow state
   const [stateGlowing, setStateGlowing] = useState(false);
   const [summaryGlowing, setSummaryGlowing] = useState(false);
 
-  // Track the previous message count to detect new messages
-  const prevMsgCountRef = useRef<number>(0);
+  // Baselines para detectar mudança REAL de estado/resumo (e não brilhar só
+  // porque trocou de conversa). `undefined` força a 1ª passada a só sincronizar.
+  const prevConvIdRef = useRef<string | null | undefined>(undefined);
+  const prevStateRef = useRef<string>('');
+  const prevSummaryRef = useRef<string>('');
 
-  // Find or create current active conversation
-  const activeConversation = conversations.find(c => c.agentId === selectedAgent?.id) || {
+  // Conversa ativa (uma de N do agente). Se nenhuma estiver ativa, mostra um
+  // estado sintético de boas-vindas — a conversa real é criada na 1ª mensagem.
+  const activeConversation = conversations.find(c => c.id === activeConversationId) || {
     id: 'temp-chat',
     agentId: selectedAgent?.id || '',
     title: `Chat com ${selectedAgent?.spec.identity.agent_name || 'Agente'}`,
@@ -56,23 +93,36 @@ export const ChatAgent: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeConversation.messages]);
 
-  // Trigger observability glow when messages change
+  // Brilha cada card só quando o SEU valor muda de verdade (após a resposta do
+  // agente). Trocar de conversa ou abrir o chat apenas sincroniza a baseline.
   useEffect(() => {
-    const currentCount = activeConversation.messages.length;
-    if (currentCount > prevMsgCountRef.current && prevMsgCountRef.current > 0) {
-      // New message arrived — trigger glow after a short delay (simulating async state update)
-      const glowTimer = setTimeout(() => {
-        setStateGlowing(true);
-        setSummaryGlowing(true);
-        setTimeout(() => {
-          setStateGlowing(false);
-          setSummaryGlowing(false);
-        }, 3000);
-      }, 1300); // slightly after the agent reply delay
-      return () => clearTimeout(glowTimer);
+    const stateStr = JSON.stringify(activeConversation.state_json);
+    const summaryStr = activeConversation.summary_text;
+
+    if (prevConvIdRef.current !== activeConversationId) {
+      prevConvIdRef.current = activeConversationId;
+      prevStateRef.current = stateStr;
+      prevSummaryRef.current = summaryStr;
+      setStateGlowing(false);
+      setSummaryGlowing(false);
+      return;
     }
-    prevMsgCountRef.current = currentCount;
-  }, [activeConversation.messages.length]);
+
+    const stateChanged = stateStr !== prevStateRef.current;
+    const summaryChanged = summaryStr !== prevSummaryRef.current;
+    if (!stateChanged && !summaryChanged) return;
+
+    if (stateChanged) setStateGlowing(true);
+    if (summaryChanged) setSummaryGlowing(true);
+    prevStateRef.current = stateStr;
+    prevSummaryRef.current = summaryStr;
+
+    const timer = setTimeout(() => {
+      setStateGlowing(false);
+      setSummaryGlowing(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [activeConversationId, activeConversation.state_json, activeConversation.summary_text]);
 
   // Handle setting active knowledge bases
   useEffect(() => {
@@ -104,6 +154,20 @@ export const ChatAgent: React.FC = () => {
   const selectedCount = Object.values(selectedKBs).filter(Boolean).length;
   const { state_json, summary_text } = activeConversation;
 
+  // Histórico: conversas deste agente, mais recentes primeiro, filtradas pela busca.
+  const agentConversations = conversations
+    .filter(c => c.agentId === selectedAgent.id)
+    .filter(c => {
+      if (!convSearch.trim()) return true;
+      const q = convSearch.toLowerCase();
+      const lastMsg = c.messages[c.messages.length - 1]?.content ?? '';
+      return c.title.toLowerCase().includes(q) || lastMsg.toLowerCase().includes(q);
+    })
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+
+  // Agrupamento estilo data-studio: "Fixadas" primeiro, depois por recência.
+  const conversationGroups = groupConversations(agentConversations);
+
   // ── Compilador "Spec to Agent" (simulado) ──
   // Pega o ESQUELETO do template master e preenche as lacunas {{...}} com os valores
   // da spec + os dados de runtime da conversa. Isto é o que o compilador real faz.
@@ -127,17 +191,10 @@ export const ChatAgent: React.FC = () => {
   };
 
   // Substitui {{camada.campo}} (spec) e {{token}} (runtime) no esqueleto.
-  const filledSkeleton = (template?.promptSkeleton ?? '(template master não encontrado)').replace(
-    /\{\{\s*([\w.]+)\s*\}\}/g,
-    (_match, path: string) => {
-      if (path in runtimeValues) return runtimeValues[path];
-      const value = path
-        .split('.')
-        .reduce<any>((acc, key) => (acc == null ? acc : acc[key]), selectedAgent.spec);
-      if (value === undefined || value === null || value === '') return `«${path} não preenchido»`;
-      if (Array.isArray(value)) return value.length ? value.map(v => `- ${v}`).join('\n') : '(nenhuma)';
-      return String(value);
-    }
+  const filledSkeleton = compilePromptSkeleton(
+    template?.promptSkeleton ?? '(template master não encontrado)',
+    selectedAgent.spec,
+    runtimeValues,
   );
 
   const compiledPromptText = `[AGENT_SYSTEM — Prompt Compilado · envio real ao LLM]
@@ -167,7 +224,7 @@ ${filledSkeleton}`;
         {/* New Conversation Button */}
         <button
           className="new-conv-btn"
-          onClick={() => alert('Nova conversa iniciada (Mock).')}
+          onClick={() => startNewConversation(selectedAgent.id)}
         >
           <Plus size={16} />
           <span>Nova conversa</span>
@@ -179,6 +236,8 @@ ${filledSkeleton}`;
             type="text"
             placeholder="Buscar conversas..."
             className="conv-search-input"
+            value={convSearch}
+            onChange={(e) => setConvSearch(e.target.value)}
           />
         </div>
 
@@ -222,6 +281,72 @@ ${filledSkeleton}`;
           </div>
         </div>
 
+        {/* Conversation history (abaixo das Bases de Conhecimento, como no data-studio) */}
+        <div className="sub-sidebar-section conv-history-section">
+          <div className="sub-sidebar-title">
+            <span>Histórico de Conversas</span>
+            <span className="conv-history-count">{agentConversations.length}</span>
+          </div>
+
+          {conversationGroups.length > 0 ? (
+            <div className="conv-history-list">
+              {conversationGroups.map((group) => (
+                <div key={group.label} className="conv-history-group">
+                  <div className="conv-history-group-label">{group.label}</div>
+                  {group.items.map((conv) => {
+                    const lastMsg = conv.messages[conv.messages.length - 1]?.content ?? '';
+                    const isActiveConv = conv.id === activeConversationId;
+                    return (
+                      <div
+                        key={conv.id}
+                        className={`conv-history-item ${isActiveConv ? 'active' : ''} ${conv.pinned ? 'pinned' : ''}`}
+                        onClick={() => setActiveConversationId(conv.id)}
+                      >
+                        <div className="conv-history-item-row">
+                          {conv.pinned ? (
+                            <Pin size={12} className="conv-history-lead pinned" />
+                          ) : (
+                            <MessageSquare size={12} className="conv-history-lead" />
+                          )}
+                          <span className="conv-history-title">{conv.title}</span>
+                          <button
+                            type="button"
+                            className="conv-history-pin-btn"
+                            title={conv.pinned ? 'Desafixar conversa' : 'Fixar conversa'}
+                            onClick={(e) => { e.stopPropagation(); toggleConversationPin(conv.id); }}
+                          >
+                            <Pin size={12} />
+                          </button>
+                        </div>
+                        <span className="conv-history-preview">{lastMsg.replace(/[*#]/g, '')}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="conv-history-empty">
+              {convSearch.trim()
+                ? 'Nenhuma conversa encontrada para a busca.'
+                : 'Nenhuma conversa ainda. Clique em "Nova conversa" ou envie uma mensagem.'}
+            </p>
+          )}
+        </div>
+
+        {/* ── Observability (Estado + Resumo) — só no Modo Avançado ──
+            São artefatos de runtime/debug do motor (state_json / summary_text),
+            não features para o usuário final. Ficam visíveis para o perfil
+            curador/engenheiro (Avançado); no Simples a conversa fica limpa. */}
+        {isAdvanced && (
+        <>
+        {/* Caption: explica o que são esses cards (são debug do runtime) */}
+        <p className="obs-intro">
+          Observabilidade do runtime (debug). Estes são o <strong>estado</strong> e o
+          <strong> resumo</strong> que o compilador injeta no prompt — eles brilham quando o
+          agente os atualiza, a cada resposta.
+        </p>
+
         {/* ── Observability Card: Estado da Conversa ── */}
         <div className={`obs-card ${stateGlowing ? 'updated-glow-card' : ''}`}>
           <div className="obs-card-header">
@@ -262,6 +387,8 @@ ${filledSkeleton}`;
             )}
           </div>
         </div>
+        </>
+        )}
 
       </div>
 
@@ -280,15 +407,17 @@ ${filledSkeleton}`;
           </div>
 
           <div className="chat-header-actions">
-            {/* Inspect Prompt Button */}
-            <button
-              className="inspect-prompt-btn"
-              onClick={() => setShowPromptModal(true)}
-              title="Inspecionar Prompt Compilado"
-            >
-              <Code size={14} />
-              <span>Inspecionar Prompt</span>
-            </button>
+            {/* Inspect Prompt Button — debug/observability, só no Modo Avançado */}
+            {isAdvanced && (
+              <button
+                className="inspect-prompt-btn"
+                onClick={() => setShowPromptModal(true)}
+                title="Inspecionar Prompt Compilado"
+              >
+                <Code size={14} />
+                <span>Inspecionar Prompt</span>
+              </button>
+            )}
 
             <select
               className="chat-model-select"

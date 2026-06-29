@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { Tenant, Agent, Message, Conversation, AgentSpec, ConversationStateJson, MasterTemplate } from '../types';
+import { getMissingLayers } from '../utils/promptCompiler';
 
 type ActiveView = 'home' | 'factory' | 'agents' | 'chat-agent' | 'templates';
 
@@ -20,6 +21,15 @@ interface AppContextType {
   selectedAgent: Agent | null;
   setSelectedAgent: (agent: Agent | null) => void;
   conversations: Conversation[];
+  // Conversa atualmente aberta no chat (uma de N por agente). null = nova/sem conversa.
+  activeConversationId: string | null;
+  setActiveConversationId: (id: string | null) => void;
+  // Abre o chat de um agente (seleciona o agente + a conversa mais recente, se houver).
+  openAgentChat: (agentId: string) => void;
+  // Cria uma nova conversa vazia para o agente e a torna ativa.
+  startNewConversation: (agentId: string) => void;
+  // Fixa/desafixa uma conversa no topo do histórico.
+  toggleConversationPin: (conversationId: string) => void;
   creatorConversation: Conversation;
   creatorSpec: AgentSpec;
   creatorStep: number;
@@ -30,6 +40,10 @@ interface AppContextType {
   sendMessageToCreator: (content: string) => void;
   sendMessageToAgent: (agentId: string, content: string) => void;
   createAgentFromSpec: () => void;
+  // Edição de spec de um agente existente (RF / PUT /agents/{id}).
+  // Quando != null, a Fábrica está editando este agente em vez de criar um novo.
+  editingAgentId: string | null;
+  editAgentSpec: (agentId: string) => void;
   updateAgentIntegrations: (agentId: string, integrations: Agent['integrations']) => void;
   deleteAgent: (agentId: string) => void;
   resetCreatorChat: () => void;
@@ -392,6 +406,37 @@ const makeInitialCreatorConversation = (): Conversation => ({
   summary_text: '',
 });
 
+// Título curto para a conversa, derivado da primeira mensagem do usuário.
+const deriveConvTitle = (content: string) =>
+  content.length > 40 ? `${content.slice(0, 40)}…` : content || 'Nova conversa';
+
+// Cria uma conversa de agente já com a mensagem de boas-vindas e o estado
+// inicial derivado dos defaults de planejamento do agente.
+const makeAgentConversation = (agent: Agent, firstUserContent?: string): Conversation => {
+  const now = new Date().toISOString();
+  return {
+    id: `conv-${agent.id}-${Date.now()}`,
+    agentId: agent.id,
+    title: firstUserContent ? deriveConvTitle(firstUserContent) : 'Nova conversa',
+    messages: [
+      {
+        id: `msg-welcome-${Date.now()}`,
+        sender: 'assistant',
+        content: `Olá! Eu sou o **${agent.spec.identity.agent_name}**. Como posso ajudar você hoje?`,
+        timestamp: now,
+      },
+    ],
+    updatedAt: now,
+    state_json: {
+      current_stage: agent.spec.planning.default_agent_stage || 'triagem',
+      user_intent: 'aguardando_input',
+      current_goal: agent.spec.planning.default_current_goal || 'Iniciar atendimento',
+      next_action: agent.spec.planning.default_next_action || 'aguardar_mensagem',
+    },
+    summary_text: '',
+  };
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeView, setActiveView] = useState<ActiveView>('factory');
   const [isAdvanced, setIsAdvancedState] = useState<boolean>(
@@ -415,11 +460,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [agents, setAgents] = useState<Agent[]>(initialAgents);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [creatorSpec, setCreatorSpec] = useState<AgentSpec>(defaultSpec);
   const [creatorStep, setCreatorStep] = useState<number>(0);
   const [lastUpdatedFields, setLastUpdatedFields] = useState<Record<string, string[]>>({});
   const [creatorMasterTemplateKey, setCreatorMasterTemplateKey] = useState<string>('Agente de Vendas');
   const [creatorChannel, setCreatorChannel] = useState<string>('Web');
+  const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
 
   const [creatorConversation, setCreatorConversation] = useState<Conversation>(makeInitialCreatorConversation());
 
@@ -470,19 +517,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setCreatorSpec(next);
     if (Object.keys(filled).length > 0) setLastUpdatedFields(filled);
-  };
-
-  // Helper to check what layers are still empty
-  const getMissingLayers = (spec: AgentSpec) => {
-    const missing: string[] = [];
-    if (!spec.identity.agent_name || !spec.identity.agent_profile) missing.push('Identidade');
-    if (!spec.behavior.behaviour_rules) missing.push('Comportamento');
-    if (!spec.security.security_rules) missing.push('Segurança');
-    if (!spec.context.segment) missing.push('Contexto');
-    if (!spec.planning.roteiro) missing.push('Planejamento');
-    if (spec.action.tools.length === 0) missing.push('Ação (Tools)');
-    if (!spec.response.task) missing.push('Resposta');
-    return missing;
   };
 
   const sendMessageToCreator = (content: string) => {
@@ -692,32 +726,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timestamp: new Date().toISOString(),
     };
 
-    let conversation = conversations.find(c => c.agentId === agentId);
-    let updatedConvs = [...conversations];
+    // Resolve a conversa-alvo: a conversa ativa do agente ou uma nova
+    // (criação preguiçosa na primeira mensagem).
+    const existing = conversations.find(
+      c => c.id === activeConversationId && c.agentId === agentId,
+    );
+    let convId: string;
 
-    if (!conversation) {
-      conversation = {
-        id: `conv-${agentId}-${Date.now()}`,
-        agentId,
-        title: `Chat com ${activeAgent.spec.identity.agent_name}`,
-        messages: [userMsg],
-        updatedAt: new Date().toISOString(),
-        state_json: {
-          current_stage: activeAgent.spec.planning.default_agent_stage || 'triagem',
-          user_intent: 'aguardando_analise',
-          current_goal: activeAgent.spec.planning.default_current_goal || 'Atendimento inicial',
-          next_action: activeAgent.spec.planning.default_next_action || 'processar_input',
-        },
-        summary_text: '',
-      };
-      updatedConvs.push(conversation);
+    if (!existing) {
+      const created = makeAgentConversation(activeAgent, content);
+      const withUser: Conversation = { ...created, messages: [...created.messages, userMsg] };
+      convId = withUser.id;
+      setConversations(prev => [...prev, withUser]);
+      setActiveConversationId(convId);
     } else {
-      conversation.messages = [...conversation.messages, userMsg];
-      conversation.updatedAt = new Date().toISOString();
-      updatedConvs = conversations.map(c => c.id === conversation!.id ? conversation! : c);
+      convId = existing.id;
+      const isFirstUserMsg = !existing.messages.some(m => m.sender === 'user');
+      const updated: Conversation = {
+        ...existing,
+        title: isFirstUserMsg ? deriveConvTitle(content) : existing.title,
+        messages: [...existing.messages, userMsg],
+        updatedAt: new Date().toISOString(),
+      };
+      setConversations(prev => prev.map(c => (c.id === convId ? updated : c)));
     }
-
-    setConversations(updatedConvs);
 
     // Simulate state update after sending message
     setTimeout(() => {
@@ -760,7 +792,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const newSummary = `Usuário perguntou sobre: "${content.substring(0, 60)}${content.length > 60 ? '...' : ''}". Agente identificou intenção de ${newIntent.replace(/_/g, ' ')} e está na fase de ${newStage.replace(/_/g, ' ')}. Resposta gerada com ${confidence}% de confiança usando ${sources.length} fonte(s).`;
 
       setConversations(prev => prev.map(c => {
-        if (c.agentId === agentId) {
+        if (c.id === convId) {
           return {
             ...c,
             messages: [...c.messages, agentMsg],
@@ -779,8 +811,72 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 1200);
   };
 
+  // Abre o chat de um agente: seleciona o agente e a conversa mais recente
+  // (ou nenhuma, deixando uma conversa nova ser criada na primeira mensagem).
+  const openAgentChat = (agentId: string) => {
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent) return;
+    setSelectedAgent(agent);
+    const recent = conversations
+      .filter(c => c.agentId === agentId)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    setActiveConversationId(recent.length ? recent[0].id : null);
+    setActiveView('chat-agent');
+  };
+
+  // Cria uma nova conversa vazia (só com a saudação) e a torna ativa.
+  const startNewConversation = (agentId: string) => {
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent) return;
+    const conv = makeAgentConversation(agent);
+    setConversations(prev => [...prev, conv]);
+    setActiveConversationId(conv.id);
+  };
+
+  const toggleConversationPin = (conversationId: string) => {
+    setConversations(prev =>
+      prev.map(c => (c.id === conversationId ? { ...c, pinned: !c.pinned } : c)),
+    );
+  };
+
+  // Carrega a spec de um agente existente de volta na Fábrica para edição.
+  const editAgentSpec = (agentId: string) => {
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent) return;
+
+    // Cópia profunda para não mutar o agente original enquanto se edita.
+    setCreatorSpec(JSON.parse(JSON.stringify(agent.spec)) as AgentSpec);
+    setCreatorMasterTemplateKey(agent.master_template_key);
+    setCreatorChannel(agent.channel);
+    setCreatorStep(0);
+    setLastUpdatedFields({});
+    setCreatorConversation(makeInitialCreatorConversation());
+    setEditingAgentId(agentId);
+    setActiveView('factory');
+  };
+
   const createAgentFromSpec = () => {
     if (!creatorSpec.identity.agent_name) return;
+
+    // Modo edição: atualiza o agente existente no lugar (PUT /agents/{id}),
+    // preservando id, createdAt, integrações, modelo e status.
+    if (editingAgentId) {
+      const existing = agents.find(a => a.id === editingAgentId);
+      if (!existing) return;
+
+      const updatedAgent: Agent = {
+        ...existing,
+        spec: { ...creatorSpec },
+        master_template_key: creatorMasterTemplateKey,
+        channel: creatorChannel,
+      };
+
+      setAgents(prev => prev.map(a => (a.id === editingAgentId ? updatedAgent : a)));
+      resetCreatorChat();
+      setSelectedAgent(updatedAgent);
+      setActiveView('agents');
+      return;
+    }
 
     const newAgent: Agent = {
       id: `agent-${Date.now()}`,
@@ -813,6 +909,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteAgent = (agentId: string) => {
+    // Se a conversa ativa pertence ao agente removido, limpa a seleção.
+    const activeConv = conversations.find(c => c.id === activeConversationId);
+    if (activeConv && activeConv.agentId === agentId) {
+      setActiveConversationId(null);
+    }
     setAgents(prev => prev.filter(a => a.id !== agentId));
     setConversations(prev => prev.filter(c => c.agentId !== agentId));
     if (selectedAgent && selectedAgent.id === agentId) {
@@ -832,6 +933,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLastUpdatedFields({});
     setCreatorMasterTemplateKey(initialMasterTemplates[0].name);
     setCreatorChannel('Web');
+    setEditingAgentId(null);
   };
 
   return (
@@ -851,6 +953,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         selectedAgent,
         setSelectedAgent,
         conversations,
+        activeConversationId,
+        setActiveConversationId,
+        openAgentChat,
+        startNewConversation,
+        toggleConversationPin,
         creatorConversation,
         creatorSpec,
         creatorStep,
@@ -861,6 +968,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         sendMessageToCreator,
         sendMessageToAgent,
         createAgentFromSpec,
+        editingAgentId,
+        editAgentSpec,
         updateAgentIntegrations,
         deleteAgent,
         resetCreatorChat,

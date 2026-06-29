@@ -6,7 +6,7 @@ import { Bot } from 'lucide-react';
 import './AgentsList.css';
 
 export const AgentsList: React.FC = () => {
-  const { agents, selectedAgent, setSelectedAgent, setActiveView } = useApp();
+  const { agents, selectedAgent, setSelectedAgent, openAgentChat, editAgentSpec } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterModel, setFilterModel] = useState('all');
   const [isShareOpen, setIsShareOpen] = useState(false);
@@ -24,11 +24,7 @@ export const AgentsList: React.FC = () => {
   });
 
   const handleChat = (agentId: string) => {
-    const agent = agents.find(a => a.id === agentId);
-    if (agent) {
-      setSelectedAgent(agent);
-      setActiveView('chat-agent');
-    }
+    openAgentChat(agentId);
   };
 
   const handleShare = (agentId: string) => {
@@ -73,11 +69,12 @@ export const AgentsList: React.FC = () => {
       {filteredAgents.length > 0 ? (
         <div className="agents-grid">
           {filteredAgents.map(agent => (
-            <AgentCard 
+            <AgentCard
               key={agent.id}
               agent={agent}
               onChat={() => handleChat(agent.id)}
               onShare={() => handleShare(agent.id)}
+              onEdit={() => editAgentSpec(agent.id)}
             />
           ))}
         </div>

@@ -3,7 +3,14 @@ import { useApp } from '../context/AppContext';
 import { ChatBubble } from '../components/chat/ChatBubble';
 import { ChatInput } from '../components/chat/ChatInput';
 import { StepProgress } from '../components/dashboard/StepProgress';
-import { Layers, Trash2, Code, Plus } from 'lucide-react';
+import { Layers, Trash2, Code, Plus, Eye, X, Zap, AlertCircle, ArrowLeft, ArrowRight, Check, Pencil } from 'lucide-react';
+import {
+  compilePromptSkeleton,
+  PREVIEW_RUNTIME_VALUES,
+  getMissingLayers,
+  getCompletionPercent,
+  getLayerStatuses,
+} from '../utils/promptCompiler';
 import './Factory.css';
 
 export const Factory: React.FC = () => {
@@ -25,13 +32,18 @@ export const Factory: React.FC = () => {
     masterTemplates,
     setActiveView,
     setIsAdvanced,
+    editingAgentId,
+    agents,
   } = useApp();
 
   const selectedTemplate = masterTemplates.find(t => t.name === creatorMasterTemplateKey);
+  const editingAgent = editingAgentId ? agents.find(a => a.id === editingAgentId) : null;
+  const isEditing = !!editingAgent;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [newTool, setNewTool] = useState('');
   const [showSkeleton, setShowSkeleton] = useState(false);
+  const [showPromptModal, setShowPromptModal] = useState(false);
   
   // Local state to manage active glowing highlight animations
   const [activeHighlights, setActiveHighlights] = useState<Record<string, boolean>>({});
@@ -567,8 +579,36 @@ export const Factory: React.FC = () => {
     }
   };
 
-  const progress = Math.min(100, Math.round((Math.max(0, creatorStep) / 7) * 100));
-  const canBuild = !!creatorSpec.identity.agent_name;
+  // Progresso = completude REAL da spec (camadas preenchidas), não a aba atual.
+  const missingLayers = getMissingLayers(creatorSpec);
+  const progress = getCompletionPercent(creatorSpec);
+  // Status da camada atualmente aberta (para o botão "Continuar"). Os passos
+  // de formulário são 0–6; o passo 7 é a revisão de JSON (sem camada própria).
+  const layerStatuses = getLayerStatuses(creatorSpec);
+  const isFormStep = creatorStep >= 0 && creatorStep <= 6;
+  const currentLayerComplete = isFormStep ? layerStatuses[creatorStep].complete : true;
+  // Só permite finalizar quando todas as 7 camadas estão completas.
+  // (A navegação entre camadas continua livre — só o "Construir" é bloqueado.)
+  const canBuild = missingLayers.length === 0;
+
+  // ── Pré-visualização do prompt compilado na Fábrica (lacuna #7) ──
+  // Usa o esqueleto do template selecionado + a spec atual. Os blocos de
+  // runtime aparecem como placeholders ("injetado em tempo de execução"),
+  // pois aqui ainda não existe uma conversa.
+  const previewSkeleton = compilePromptSkeleton(
+    selectedTemplate?.promptSkeleton ?? '(template master não selecionado)',
+    creatorSpec,
+    PREVIEW_RUNTIME_VALUES,
+  );
+
+  const previewPromptText = `[AGENT_SYSTEM — Pré-visualização do Prompt Compilado]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Template Master : ${creatorMasterTemplateKey}
+Canal           : ${creatorChannel}
+Completude      : ${progress}%${missingLayers.length ? `  (faltam: ${missingLayers.join(', ')})` : '  ✓ pronto'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${previewSkeleton}`;
 
   return (
     <div className="factory-page fade-in">
@@ -594,6 +634,25 @@ export const Factory: React.FC = () => {
           <span>Configuração por Camadas</span>
         </div>
 
+        {/* Editing banner: shown when loading an existing agent's spec */}
+        {isEditing && (
+          <div className="spec-editing-banner">
+            <Pencil size={13} />
+            <span>
+              Editando a spec de <strong>{editingAgent!.spec.identity.agent_name}</strong>.
+              As alterações substituem o agente existente.
+            </span>
+            <button
+              type="button"
+              className="spec-editing-cancel"
+              onClick={resetCreatorChat}
+              title="Descartar a edição e voltar a criar um novo agente"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
+
         {/* Stepper Tabs */}
         <StepProgress />
 
@@ -616,48 +675,146 @@ export const Factory: React.FC = () => {
           {renderActiveStepForm()}
         </div>
 
-        {/* Review JSON Spec Tab Trigger */}
-        {creatorStep < 7 && (
-          <button 
-            onClick={() => setCreatorStep(7)}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--primary-color)', alignSelf: 'flex-end', fontWeight: 600 }}
-            type="button"
-          >
-            <Code size={12} />
-            <span>Ver JSON Completo</span>
-          </button>
+        {/* Layer navigation: Voltar / Continuar (navegação linear, opcional —
+            os tabs do stepper continuam permitindo pular livremente) */}
+        {isFormStep && (
+          <div className="spec-step-nav">
+            {creatorStep > 0 ? (
+              <button
+                className="spec-step-back-btn"
+                onClick={() => setCreatorStep(creatorStep - 1)}
+                type="button"
+              >
+                <ArrowLeft size={14} />
+                <span>Voltar</span>
+              </button>
+            ) : (
+              <span className="spec-step-nav-spacer" />
+            )}
+
+            {creatorStep < 6 ? (
+              <button
+                className={`spec-step-next-btn ${currentLayerComplete ? '' : 'pending'}`}
+                onClick={() => setCreatorStep(creatorStep + 1)}
+                title={currentLayerComplete ? 'Ir para a próxima camada' : 'Você pode continuar mesmo sem preencher esta camada'}
+                type="button"
+              >
+                {currentLayerComplete && <Check size={14} />}
+                <span>Continuar</span>
+                <ArrowRight size={14} />
+              </button>
+            ) : (
+              <button
+                className={`spec-step-next-btn ${currentLayerComplete ? '' : 'pending'}`}
+                onClick={() => setCreatorStep(7)}
+                type="button"
+              >
+                {currentLayerComplete && <Check size={14} />}
+                <span>Revisar JSON</span>
+                <ArrowRight size={14} />
+              </button>
+            )}
+          </div>
         )}
 
-        {creatorStep === 7 && (
-          <button 
-            onClick={() => setCreatorStep(0)}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--primary-color)', alignSelf: 'flex-end', fontWeight: 600 }}
+        {/* Secondary toolbar: preview prompt + view JSON */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '14px' }}>
+          <button
+            onClick={() => setShowPromptModal(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 600 }}
             type="button"
           >
-            <span>Voltar aos Formulários</span>
+            <Eye size={12} />
+            <span>Pré-visualizar prompt</span>
           </button>
+
+          {creatorStep < 7 ? (
+            <button
+              onClick={() => setCreatorStep(7)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 600 }}
+              type="button"
+            >
+              <Code size={12} />
+              <span>Ver JSON Completo</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setCreatorStep(0)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 600 }}
+              type="button"
+            >
+              <span>Voltar aos Formulários</span>
+            </button>
+          )}
+        </div>
+
+        {/* Completeness hint: what's still missing before building */}
+        {missingLayers.length > 0 && (
+          <div className="spec-missing-hint">
+            <AlertCircle size={13} />
+            <span>
+              Faltam {missingLayers.length} de 7 camadas para construir:{' '}
+              {missingLayers.map((layer, i) => (
+                <React.Fragment key={layer}>
+                  <strong>{layer}</strong>{i < missingLayers.length - 1 ? ', ' : ''}
+                </React.Fragment>
+              ))}
+            </span>
+          </div>
         )}
 
         {/* Action Panel Buttons */}
         <div className="spec-actions">
-          <button 
+          <button
             className="spec-build-btn"
             disabled={!canBuild}
             onClick={createAgentFromSpec}
+            title={
+              canBuild
+                ? (isEditing ? 'Salvar as alterações no agente' : 'Construir o agente a partir da spec')
+                : `Preencha as camadas faltantes: ${missingLayers.join(', ')}`
+            }
             type="button"
           >
-            Construir Agente
+            {isEditing
+              ? (canBuild ? 'Salvar Alterações' : `Salvar Alterações (${progress}%)`)
+              : (canBuild ? 'Construir Agente' : `Construir Agente (${progress}%)`)}
           </button>
-          
-          <button 
+
+          <button
             className="spec-reset-btn"
             onClick={resetCreatorChat}
             type="button"
           >
-            Reiniciar Especificações
+            {isEditing ? 'Cancelar Edição' : 'Reiniciar Especificações'}
           </button>
         </div>
       </div>
+
+      {/* ── Prompt Preview Modal (lacuna #7) ── */}
+      {showPromptModal && (
+        <div className="prompt-modal-overlay" onClick={() => setShowPromptModal(false)}>
+          <div className="prompt-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="prompt-modal-header">
+              <div className="prompt-modal-title">
+                <Zap size={16} />
+                <span>Pré-visualização do Prompt — Template + Spec atual</span>
+              </div>
+              <button className="prompt-modal-close" onClick={() => setShowPromptModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="prompt-modal-body">
+              <div className="prompt-modal-meta">
+                <span className="prompt-meta-chip">Template: <strong>{creatorMasterTemplateKey}</strong></span>
+                <span className="prompt-meta-chip">Canal: <strong>{creatorChannel}</strong></span>
+                <span className="prompt-meta-chip">Completude: <strong>{progress}%</strong></span>
+              </div>
+              <pre className="prompt-terminal">{previewPromptText}</pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

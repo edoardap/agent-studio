@@ -50,6 +50,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  flex-shrink: 0;
 }
 
 .sub-sidebar-title {
@@ -170,11 +171,28 @@
   }
 }
 
+.obs-intro {
+  font-size: 0.7rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  background-color: var(--bg-app);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  flex-shrink: 0;
+}
+
+.obs-intro strong {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
 .obs-card {
   background-color: var(--bg-sub-sidebar);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   overflow: hidden;
+  flex-shrink: 0;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
@@ -444,4 +462,129 @@
   overflow-x: auto;
   white-space: pre;
   tab-size: 2;
+}
+
+/* ── Conversation history (multi-conversa por agente; estilo data-studio) ── */
+.conv-history-section {
+  border-top: 1px solid var(--border-light);
+  padding-top: var(--spacing-sm);
+}
+
+.conv-history-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background-color: var(--bg-app);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.conv-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.conv-history-group {
+  margin-bottom: 6px;
+}
+
+.conv-history-group-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 4px var(--spacing-xs) 2px;
+}
+
+.conv-history-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px var(--spacing-sm);
+  border-radius: var(--radius-md);
+  text-align: left;
+  border: 1px solid transparent;
+  width: 100%;
+  cursor: pointer;
+}
+
+.conv-history-item:hover {
+  background-color: var(--bg-app);
+}
+
+.conv-history-item.active {
+  background-color: var(--primary-light);
+  border-color: rgba(59, 68, 177, 0.18);
+}
+
+.conv-history-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.conv-history-lead {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.conv-history-lead.pinned {
+  color: var(--primary-color);
+}
+
+.conv-history-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conv-history-item.active .conv-history-title {
+  color: var(--primary-color);
+}
+
+.conv-history-pin-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+}
+
+.conv-history-item:hover .conv-history-pin-btn,
+.conv-history-item.pinned .conv-history-pin-btn {
+  opacity: 1;
+}
+
+.conv-history-pin-btn:hover {
+  color: var(--primary-color);
+}
+
+.conv-history-item.pinned .conv-history-pin-btn {
+  color: var(--primary-color);
+}
+
+.conv-history-preview {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 18px;
+}
+
+.conv-history-empty {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  padding: 2px;
 }

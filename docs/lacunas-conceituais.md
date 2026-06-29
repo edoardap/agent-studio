@@ -14,9 +14,9 @@
 | 3 | "Criar template" vs "selecionar template" confundidos | **Protótipo** | ✅ Resolvido |
 | 4 | Seleção de template é cega (sem preview/descrição) | **Protótipo** | ✅ Resolvido |
 | 5 | Template master não faz nada (cosmético) | **Protótipo** | ✅ Resolvido |
-| 6 | Não há editar/clonar spec de agente existente | **Protótipo** | Média |
-| 7 | Preview do prompt compilado só existe no chat | **Protótipo** | Baixa |
-| 8 | Barra de progresso mede aba, não completude | **Protótipo** | Baixa |
+| 6 | Não há editar/clonar spec de agente existente | **Protótipo** | ✅ Editar resolvido · clonar pendente |
+| 7 | Preview do prompt compilado só existe no chat | **Protótipo** | ✅ Resolvido |
+| 8 | Barra de progresso mede aba, não completude | **Protótipo** | ✅ Resolvido |
 | 9 | Tenant não filtra agentes | **Protótipo** | Baixa |
 | 10 | Amigabilidade para o perfil não-técnico (dono/representante) | **Produto** | 🔵 Em discussão |
 
@@ -80,23 +80,53 @@
   Trocar de template muda de fato o prompt final, não só o rótulo. (Pré-preenchimento da spec já
   feito na lacuna #4.)
 
-## 6. Sem editar/clonar spec de agente existente
-**Falha do protótipo.**
-- A spec pede `PUT /agents/{id}` (Seção 13) e o critério de aceite #2 ("agentes diferentes
-  trocando só a spec"). Hoje só dá pra criar e deletar.
-- **Recomendação:** ações "Editar spec" e "Duplicar" no card do agente (carregam a spec de
-  volta na Fábrica). Demonstra literalmente o critério de aceite central do piloto.
+## 6. Sem editar (e, opcionalmente, clonar) spec de agente existente
+**Falha do protótipo.** *(distinguir o que é requisito do que é conveniência)*
+
+**Editar spec — É REQUISITO do documento Spec to Agent:**
+- A Seção 13 pede `PUT /agents/{id}` — *"Atualiza a spec do agente."*
+- A Seção 4.4 lista *"editor de spec"* como caminho de evolução.
+- O critério de aceite #2 ("agentes diferentes trocando só a spec") é demonstrado editando.
+- Hoje o protótipo só **cria** e **deleta** — não dá pra carregar a spec de um agente de volta
+  na Fábrica e ajustar.
+- **Recomendação:** ação "Editar spec" no card do agente (carrega a spec na Fábrica e faz o
+  `createAgentFromSpec` virar um "salvar alterações" quando há um agente em edição).
+- ✅ **Resolvido:** botão de **editar** (lápis) no card do agente chama `editAgentSpec(id)`, que carrega
+  a spec (cópia profunda), o template master e o canal de volta na Fábrica e liga o modo edição
+  (`editingAgentId`). Nesse modo a Fábrica mostra um banner "Editando a spec de …", o botão vira
+  **"Salvar Alterações"** e o `createAgentFromSpec` **atualiza o agente no lugar** (preservando id,
+  `createdAt`, integrações, modelo e status), em vez de criar um novo — equivalente ao `PUT /agents/{id}`.
+  Há "Cancelar Edição" para descartar. — `AppContext.tsx`, `AgentCard.tsx`, `AgentsList.tsx`, `Factory.tsx`
+
+**Clonar/duplicar spec — NÃO está no documento (conveniência opcional):**
+- Clonar **não** é citado no Spec to Agent. O que existe perto é *"diff entre specs"* e
+  *"versionamento avançado"*, ambos **explicitamente Fora do escopo** (Seção 5).
+- Faz sentido conceitualmente (duplicar → mudar 2 campos → salvar = literalmente "agente diferente
+  trocando só a spec"), mas é **UX de conveniência**, não requisito do piloto.
+- **Recomendação:** tratar como "nice to have" de baixa prioridade; só implementar depois do
+  "Editar spec", que é o que o documento realmente cobra.
 
 ## 7. Preview do prompt compilado só no chat
 **Falha do protótipo.**
 - O modal "Inspecionar Prompt" existe na conversa, mas não na Fábrica.
 - **Recomendação:** botão "Pré-visualizar prompt" na Fábrica, usando template + spec atual.
   Reforça o critério 4.2 ("a compilação funciona").
+- ✅ **Resolvido:** adicionado o botão **"Pré-visualizar prompt"** na Fábrica, que abre um modal com o
+  prompt compilado a partir do **esqueleto do template selecionado + a spec atual**. A rotina de
+  compilação foi extraída para `utils/promptCompiler.ts` (`compilePromptSkeleton`) e agora é
+  **compartilhada** entre a Fábrica e o chat (`ChatAgent`), então as duas telas nunca divergem.
+  Como na Fábrica ainda não há conversa, os blocos de runtime (`{{state_json}}`, `{{user_message}}`
+  etc.) aparecem como placeholders "injetado em tempo de execução".
 
 ## 8. Barra de progresso enganosa
 **Falha do protótipo.**
 - Calcula `(passo_atual / 7)`, ou seja, mede em qual aba você está, não o quanto preencheu.
 - **Recomendação:** medir completude real via `getMissingLayers()` (já existe no contexto).
+- ✅ **Resolvido:** a barra agora usa `getCompletionPercent()` (camadas preenchidas / 7) em
+  `utils/promptCompiler.ts`. Os checkmarks do stepper também passaram a refletir a **completude real**
+  de cada camada (via `getLayerStatuses()`), não mais a posição da aba. O botão **"Construir Agente"**
+  só é habilitado quando **todas as 7 camadas** estão completas — mas a **navegação entre camadas
+  continua livre** e um aviso lista quais camadas ainda faltam.
 
 ## 9. Tenant não filtra agentes
 **Falha do protótipo.**
@@ -123,6 +153,11 @@ Esses dois perfis mapeiam no toggle **Simples / Avançado**:
   "AGENT_SYSTEM" e o esqueleto do prompt ficariam só no modo Avançado.
 - **(3) Conversa como caminho principal no Simples:** priorizar o chat com o copiloto e esconder
   afordâncias técnicas (Ver JSON, rótulos crus de camada) atrás do Avançado.
+  - ✅ **Parcialmente implementado:** na tela de conversa com o agente, os cards de **Estado**
+    (`state_json`) e **Resumo** (`summary_text`) e o botão **"Inspecionar Prompt"** — todos
+    artefatos de runtime/debug do motor — passaram a aparecer **só no Modo Avançado**. No Simples a
+    conversa fica limpa para o usuário final. Não foram removidos: continuam servindo de
+    observability para o perfil curador/engenheiro e provam o critério 4.3.
 
 **Decisão pendente:** se/quando tornar o protótipo mais amigável para o não-técnico. Pode impactar
 a percepção do piloto, então fica como ponto de discussão antes de implementar.

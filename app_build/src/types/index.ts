@@ -106,6 +106,7 @@ export interface Conversation {
   id: string;
   agentId: string; // The ID of the agent this conversation is with (or "creator" for creator agent)
   title: string;
+  pinned?: boolean; // conversa fixada no topo do histórico
   messages: Message[];
   updatedAt: string;
   state_json: ConversationStateJson;

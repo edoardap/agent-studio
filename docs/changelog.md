@@ -1,5 +1,62 @@
 # Changelog — Agent Studio (protótipo)
 
+## (não commitado) — Lacunas #7 e #8: preview do prompt na Fábrica, progresso por completude e gate de construção
+
+> Resolve os pontos **#7** e **#8** de [`lacunas-conceituais.md`](./lacunas-conceituais.md), parte do **#6**
+> (editar spec) e parte do **#10** (esconder afordâncias técnicas no Simples + caminho de conversa).
+
+### Conversa: histórico multi-conversa + observability como debug
+
+- **Histórico de conversas por agente** — o modelo passou a suportar **N conversas por agente**
+  (antes era 1 fixa por `agentId`). Novo `activeConversationId` no contexto, com `openAgentChat`
+  (abre a conversa mais recente do agente) e `startNewConversation` (cria uma nova). O painel lateral
+  do chat lista o histórico (título + prévia), com busca, e clicar troca a conversa ativa.
+  O botão **"Nova conversa"** (que era um `alert` morto) agora funciona. — `context/AppContext.tsx`,
+  `pages/ChatAgent.tsx` (+`.css`), `pages/AgentsList.tsx`
+- **Histórico no padrão do data-studio** — usando `monest-tests/data-studio`
+  (`components/chat/ConversationList.tsx`) como referência: o histórico fica **abaixo das Bases de
+  Conhecimento** (não acima), as conversas são **agrupadas** por "Fixadas / Hoje / Últimos 7 dias /
+  Este mês / Antigas", e dá pra **fixar/desafixar** uma conversa (`toggleConversationPin` + campo
+  `pinned` no tipo `Conversation`), com o botão de pin aparecendo no hover. — `context/AppContext.tsx`,
+  `types/index.ts`, `pages/ChatAgent.tsx` (+`.css`)
+- **Estado/Resumo + "Inspecionar Prompt" viraram debug do Avançado (#10, sub-ponto 3)** — os cards
+  `state_json`/`summary_text` e o inspetor de prompt são artefatos de runtime/debug do motor, não
+  features de usuário final. Agora só aparecem no **Modo Avançado** (perfil curador/engenheiro); no
+  **Simples** a conversa fica limpa. Não foram removidos — continuam provando o critério 4.3
+  (runtime opera com estado/summary/histórico). — `pages/ChatAgent.tsx`
+
+
+
+- **Compilador compartilhado** — a rotina que preenche `{{camada.campo}}` / `{{token}}` no esqueleto
+  do template foi extraída para **`utils/promptCompiler.ts`** (`compilePromptSkeleton`) e agora é
+  usada tanto pelo chat (`ChatAgent`) quanto pela Fábrica, sem duplicação. — `utils/promptCompiler.ts`,
+  `pages/ChatAgent.tsx`
+- **Preview do prompt na Fábrica (#7)** — novo botão **"Pré-visualizar prompt"** abre um modal com o
+  prompt compilado a partir do template selecionado + a spec atual. Como ainda não há conversa, os
+  blocos de runtime aparecem como placeholders "injetado em tempo de execução". — `pages/Factory.tsx`
+- **Progresso por completude real (#8)** — a barra usa `getCompletionPercent()` (camadas preenchidas
+  / 7) em vez de `(passo_atual / 7)`. Os checkmarks do stepper passam a refletir a completude real de
+  cada camada via `getLayerStatuses()`. — `utils/promptCompiler.ts`, `components/dashboard/StepProgress.tsx`,
+  `pages/Factory.tsx`
+- **Gate de construção** — "Construir Agente" só habilita quando as 7 camadas estão completas; um aviso
+  lista o que falta. **A navegação entre camadas continua livre** (clique em qualquer passo do stepper).
+  — `pages/Factory.tsx`, `pages/Factory.css`
+- `getMissingLayers()` saiu de dentro do `AppContext` e passou a vir do util compartilhado.
+  — `context/AppContext.tsx`
+- **Navegação linear por camada** — botões **"Voltar"** e **"Continuar →"** no rodapé do formulário,
+  para avançar/recuar uma camada por vez. O "Continuar" mostra um ✓ quando a camada atual está
+  completa e fica discreto (sem bloquear) quando ainda falta — os tabs do stepper continuam
+  permitindo pular livremente. Na última camada (Resposta) vira **"Revisar JSON"**. — `pages/Factory.tsx`,
+  `pages/Factory.css`
+- **Editar spec de agente existente (#6, parte "editar")** — botão de lápis no card do agente carrega a
+  spec de volta na Fábrica (`editAgentSpec`). No modo edição há banner "Editando a spec de …", o botão
+  vira **"Salvar Alterações"** e o agente é **atualizado no lugar** (preserva id, `createdAt`, integrações,
+  modelo e status) — equivalente ao `PUT /agents/{id}` da Seção 13. "Cancelar Edição" descarta.
+  Clonar/duplicar permanece como conveniência opcional (não está no documento). — `context/AppContext.tsx`,
+  `components/dashboard/AgentCard.tsx` (+`.css`), `pages/AgentsList.tsx`, `pages/Factory.tsx` (+`.css`)
+
+---
+
 ## Commit `13b380c` — "feat: criacao da parte mais avancada do prototipo e criacao do template master"
 
 > 19 arquivos · +2082 / −252. Resumo das mudanças agrupadas por tema.
