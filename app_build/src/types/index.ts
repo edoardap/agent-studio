@@ -3,6 +3,31 @@ export interface Tenant {
   name: string;
 }
 
+export interface MasterTemplate {
+  key: string;
+  name: string;
+  icon: string;
+  description: string;
+  /** Esqueleto base do prompt com placeholders {{camada.campo}} preenchidos pelo compilador. */
+  promptSkeleton: string;
+  /** Valores iniciais sugeridos para a spec ao escolher este template (pré-preenche o formulário). */
+  specDefaults?: {
+    identity?: Partial<AgentSpec['identity']>;
+    behavior?: Partial<AgentSpec['behavior']>;
+    security?: Partial<AgentSpec['security']>;
+    context?: Partial<AgentSpec['context']>;
+    planning?: Partial<AgentSpec['planning']>;
+    action?: Partial<AgentSpec['action']>;
+    response?: Partial<AgentSpec['response']>;
+  };
+}
+
+// Referência a uma base de conhecimento do data-studio (id + nome para exibição).
+export interface KnowledgeBaseRef {
+  id: string;
+  name: string;
+}
+
 export interface AgentSpec {
   identity: {
     agent_name: string;
@@ -40,6 +65,9 @@ export interface AgentSpec {
   action: {
     action_general_infos: string;
     tools: string[];
+    // Bases de conhecimento associadas (referência ao catálogo do data-studio).
+    // Diferente de `tools` (capacidades em texto livre): isto é RAG estruturado.
+    knowledge_bases: KnowledgeBaseRef[];
   };
   response: {
     task: string;
@@ -54,6 +82,9 @@ export interface Agent {
   spec: AgentSpec;
   status: 'active' | 'draft' | 'building';
   createdAt: string;
+  master_template_key: string;
+  is_active: boolean;
+  channel: string;
   integrations: {
     discord: boolean;
     telegram: boolean;
@@ -73,10 +104,20 @@ export interface Message {
   reasoning?: string; // thinking process
 }
 
+export interface ConversationStateJson {
+  current_stage: string;
+  user_intent: string;
+  current_goal: string;
+  next_action: string;
+}
+
 export interface Conversation {
   id: string;
   agentId: string; // The ID of the agent this conversation is with (or "creator" for creator agent)
   title: string;
+  pinned?: boolean; // conversa fixada no topo do histórico
   messages: Message[];
   updatedAt: string;
+  state_json: ConversationStateJson;
+  summary_text: string;
 }

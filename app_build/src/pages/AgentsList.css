@@ -53,8 +53,14 @@
 
 .agents-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: var(--spacing-lg);
+  min-width: 0;
+}
+
+/* Each cell in the grid must also have min-width:0 so the card can shrink */
+.agents-grid > * {
+  min-width: 0;
 }
 
 .agents-empty-state {

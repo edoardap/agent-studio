@@ -168,6 +168,60 @@
 }
 
 /* Stepper Actions */
+/* ── Navegação entre camadas (Voltar / Continuar) ── */
+.spec-step-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.spec-step-nav-spacer {
+  flex: 1;
+}
+
+.spec-step-back-btn,
+.spec-step-next-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.spec-step-back-btn {
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-main);
+  color: var(--text-secondary);
+}
+
+.spec-step-back-btn:hover {
+  background-color: var(--primary-light);
+  color: var(--text-primary);
+}
+
+.spec-step-next-btn {
+  background-color: var(--primary-color);
+  color: var(--text-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.spec-step-next-btn:hover {
+  filter: brightness(0.95);
+}
+
+/* Quando a camada atual ainda está incompleta, o "Continuar" fica mais
+   discreto — sem bloquear (a navegação continua livre). */
+.spec-step-next-btn.pending {
+  background-color: var(--bg-main);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+}
+
 .spec-actions {
   display: flex;
   flex-direction: column;
@@ -254,3 +308,198 @@
   animation: fadeIn var(--transition-fast) forwards;
 }
 
+.factory-badge {
+  background-color: #ede9fe;
+  color: #7c3aed;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-xl);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.form-select {
+  appearance: auto;
+  cursor: pointer;
+  color: var(--text-primary);
+  background-color: var(--bg-app);
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 68, 177, 0.1);
+}
+
+
+/* ── Template Master: hint card + skeleton preview (build flow) ── */
+.template-hint-card {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--primary-light);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.template-hint-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.template-hint-toggle {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.template-hint-toggle:hover {
+  text-decoration: underline;
+}
+
+.template-hint-skeleton {
+  margin-top: 4px;
+  max-height: 220px;
+  overflow: auto;
+  font-family: monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: #d6dbe8;
+  background-color: #1e1e2f;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  white-space: pre-wrap;
+}
+
+.template-create-link {
+  margin-top: var(--spacing-sm);
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.template-create-link:hover {
+  color: var(--primary-color);
+}
+
+/* ── Configuração do Agente (passo "Config", fora das 7 camadas) ── */
+.agent-config-hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: -4px;
+}
+
+/* ── Seletor de Bases de Conhecimento (data-studio) ── */
+.kb-picker-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.kb-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: var(--radius-md);
+}
+
+.kb-picker-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 7px var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.kb-picker-item:hover {
+  border-color: var(--primary-color);
+}
+
+.kb-picker-item.checked {
+  border-color: var(--primary-color);
+  background-color: var(--primary-light);
+}
+
+.kb-picker-item input {
+  accent-color: var(--primary-color);
+}
+
+.kb-picker-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.kb-picker-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.kb-picker-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ── Editing banner: when loading an existing agent's spec ── */
+.spec-editing-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--primary-color);
+  background-color: var(--primary-light);
+  border: 1px solid var(--primary-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.spec-editing-banner svg {
+  flex-shrink: 0;
+}
+
+.spec-editing-banner strong {
+  font-weight: 600;
+}
+
+.spec-editing-cancel {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+/* ── Completeness hint: what is still missing before building ── */
+.spec-missing-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #92600a;
+  background-color: #fff8e6;
+  border: 1px solid #f5d98a;
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.spec-missing-hint svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.spec-missing-hint strong {
+  font-weight: 600;
+}

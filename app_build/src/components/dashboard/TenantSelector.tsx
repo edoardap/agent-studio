@@ -35,6 +35,8 @@ export const TenantSelector: React.FC = () => {
         return 'Agentes Criados';
       case 'chat-agent':
         return 'Conversar com Agente';
+      case 'templates':
+        return 'Templates Master';
       default:
         return 'Início';
     }

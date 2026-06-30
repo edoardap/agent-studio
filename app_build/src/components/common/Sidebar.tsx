@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { Home, Wrench, Bot, Settings, LogOut, Compass } from 'lucide-react';
+import { Home, Wrench, Bot, Settings, LogOut, Compass, Layers, Wrench as ToolsIcon, ShieldCheck, ScrollText } from 'lucide-react';
 import './Sidebar.css';
 
 export const Sidebar: React.FC = () => {
-  const { activeView, setActiveView } = useApp();
-  const [isAdvanced, setIsAdvanced] = useState(false);
+  const { activeView, setActiveView, isAdvanced, setIsAdvanced } = useApp();
 
   return (
     <aside className="sidebar">
@@ -60,6 +59,36 @@ export const Sidebar: React.FC = () => {
             <span>Agentes Criados</span>
           </button>
         </div>
+
+        {/* Advanced-only: Engine / Motor section */}
+        {isAdvanced && (
+          <div className="sidebar-menu-section">
+            <div className="sidebar-menu-title">Motor (Avançado)</div>
+
+            <button
+              onClick={() => setActiveView('templates')}
+              className={`sidebar-menu-item ${activeView === 'templates' ? 'active' : ''}`}
+            >
+              <Layers className="sidebar-menu-icon" />
+              <span>Templates Master</span>
+            </button>
+
+            <button className="sidebar-menu-item" title="Em breve" disabled>
+              <ToolsIcon className="sidebar-menu-icon" />
+              <span>Catálogo de Tools</span>
+            </button>
+
+            <button className="sidebar-menu-item" title="Em breve" disabled>
+              <ShieldCheck className="sidebar-menu-icon" />
+              <span>Governança</span>
+            </button>
+
+            <button className="sidebar-menu-item" title="Em breve" disabled>
+              <ScrollText className="sidebar-menu-icon" />
+              <span>Auditoria & Logs</span>
+            </button>
+          </div>
+        )}
 
         {/* Publicar Section */}
         <div className="sidebar-menu-section">

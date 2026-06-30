@@ -72,3 +72,21 @@
   color: var(--primary-color);
   font-weight: 700;
 }
+
+/* Passo "Config": distinto das camadas (tracejado, ícone de engrenagem). */
+.step-tab.config {
+  margin-right: 2px;
+  border-right: 1px dashed var(--border-color);
+  padding-right: 12px;
+}
+
+.step-tab.config .step-tab-number {
+  border-style: dashed;
+  border-radius: var(--radius-sm);
+}
+
+.step-tab.config.active .step-tab-number {
+  background-color: var(--text-secondary);
+  border-color: var(--text-secondary);
+  color: var(--text-light);
+}

@@ -93,6 +93,16 @@
   font-weight: 600;
 }
 
+.sidebar-menu-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sidebar-menu-item:disabled:hover {
+  background-color: transparent;
+  color: var(--text-secondary);
+}
+
 .sidebar-menu-icon {
   width: 18px;
   height: 18px;

@@ -2,13 +2,15 @@
   background-color: var(--bg-sub-sidebar);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 200px;
+  min-height: 220px;
   box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  overflow: hidden;
+  min-width: 0;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-normal);
 }
 
 .agent-card:hover {
@@ -17,11 +19,31 @@
   border-color: var(--primary-color);
 }
 
+/* Inactive state */
+.agent-card-inactive {
+  opacity: 0.6;
+  filter: grayscale(30%);
+}
+
+.agent-card-inactive:hover {
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
 .agent-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: var(--spacing-sm);
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+  min-width: 0;
+}
+
+.agent-card-badges {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0; /* badges never shrink — title does */
 }
 
 .agent-card-title {
@@ -29,6 +51,10 @@
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .agent-model-badge {
@@ -49,6 +75,51 @@
   color: #7c3aed;
 }
 
+/* Status badge for inactive */
+.agent-status-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-xl);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.agent-status-badge.inactive {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+/* Meta tags row */
+.agent-card-meta {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-sm);
+  min-width: 0;
+}
+
+.agent-meta-tag {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agent-meta-tag.template {
+  color: #7c3aed;
+  background-color: #ede9fe;
+  border-color: #ddd6fe;
+}
+
 .agent-card-description {
   font-size: 0.8rem;
   color: var(--text-secondary);
@@ -65,6 +136,8 @@
   flex-wrap: wrap;
   gap: var(--spacing-xs);
   margin-bottom: var(--spacing-md);
+  min-width: 0;
+  overflow: hidden; /* clip the row itself */
 }
 
 .agent-skill-tag {
@@ -74,6 +147,11 @@
   padding: 2px 6px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-light);
+  /* Clamp each tag so long filenames don't blow out the card */
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .agent-card-actions {
@@ -83,41 +161,65 @@
   border-top: 1px solid var(--border-light);
   padding-top: var(--spacing-sm);
   margin-top: auto;
+  gap: var(--spacing-sm);
+  min-width: 0;
 }
 
 .agent-action-main {
   display: flex;
   gap: var(--spacing-sm);
+  flex: 1;
+  min-width: 0;
+}
+
+.agent-card-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .agent-action-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 6px var(--spacing-md);
+  padding: 7px var(--spacing-md);
   border-radius: var(--radius-md);
   font-size: 0.8rem;
   font-weight: 600;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast), opacity var(--transition-fast);
 }
 
 .agent-action-btn.chat {
   background-color: var(--primary-color);
   color: var(--text-light);
+  flex: 1;
 }
 
-.agent-action-btn.chat:hover {
+.agent-action-btn.chat:hover:not(:disabled) {
   background-color: var(--primary-hover);
+}
+
+.agent-action-btn.chat:disabled,
+.agent-action-btn.chat.disabled {
+  background-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
 }
 
 .agent-action-btn.share {
   background-color: var(--primary-light);
   color: var(--primary-color);
+  flex: 1;
 }
 
 .agent-action-btn.share:hover {
   background-color: var(--primary-light-hover);
 }
 
+.agent-edit-btn,
 .agent-delete-btn {
   color: var(--text-muted);
   padding: 6px;
@@ -127,7 +229,84 @@
   justify-content: center;
 }
 
+.agent-edit-btn:hover {
+  color: var(--primary-color);
+  background-color: var(--primary-light);
+}
+
 .agent-delete-btn:hover {
   color: var(--danger-color);
   background-color: var(--danger-bg);
+}
+
+/* ---- Status control (header) ---- */
+.agent-status-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 4px;
+  cursor: pointer;
+}
+
+.agent-status-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.agent-status-label.active {
+  color: var(--success-text);
+}
+
+/* ---- Toggle Switch ---- */
+.agent-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.agent-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.agent-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.agent-toggle-slider {
+  position: absolute;
+  inset: 0;
+  background-color: #d1d5db;
+  border-radius: 20px;
+  transition: background-color var(--transition-fast);
+}
+
+.agent-toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 3px;
+  top: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform var(--transition-fast);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.agent-toggle-switch input:checked + .agent-toggle-slider {
+  background-color: var(--success-color);
+}
+
+.agent-toggle-switch input:checked + .agent-toggle-slider::before {
+  transform: translateX(16px);
 }
