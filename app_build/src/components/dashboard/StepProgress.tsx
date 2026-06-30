@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { Check } from 'lucide-react';
+import { Check, Settings } from 'lucide-react';
 import { getLayerStatuses } from '../../utils/promptCompiler';
 import './StepProgress.css';
 
@@ -14,6 +14,17 @@ export const StepProgress: React.FC = () => {
   return (
     <div className="step-progress-container fade-in">
       <div className="step-tabs">
+        {/* Passo "Config" (índice -1): atributos do agente, NÃO é uma camada. */}
+        <button
+          className={`step-tab config ${creatorStep === -1 ? 'active' : ''}`}
+          onClick={() => setCreatorStep(-1)}
+          title="Configuração do Agente (template e canal) — não é uma camada"
+          type="button"
+        >
+          <div className="step-tab-number"><Settings size={12} /></div>
+          <span className="step-tab-label">Config</span>
+        </button>
+
         {steps.map((step) => {
           const isActive = creatorStep === step.index;
           const isCompleted = step.complete;

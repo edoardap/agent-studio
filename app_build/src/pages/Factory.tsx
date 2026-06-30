@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { useApp, deriveChannel, DEFAULT_INTEGRATIONS } from '../context/AppContext';
 import { ChatBubble } from '../components/chat/ChatBubble';
 import { ChatInput } from '../components/chat/ChatInput';
 import { StepProgress } from '../components/dashboard/StepProgress';
@@ -11,6 +11,7 @@ import {
   getCompletionPercent,
   getLayerStatuses,
 } from '../utils/promptCompiler';
+import { dataStudioKnowledgeBases } from '../data/knowledgeBaseCatalog';
 import './Factory.css';
 
 export const Factory: React.FC = () => {
@@ -27,8 +28,6 @@ export const Factory: React.FC = () => {
     resetCreatorChat,
     creatorMasterTemplateKey,
     selectCreatorTemplate,
-    creatorChannel,
-    setCreatorChannel,
     masterTemplates,
     setActiveView,
     setIsAdvanced,
@@ -89,73 +88,84 @@ export const Factory: React.FC = () => {
     updateSpecField('action', 'tools', updatedTools);
   };
 
+  // Associa/desassocia uma base de conhecimento do catálogo do data-studio.
+  const toggleKnowledgeBase = (kb: { id: string; name: string }) => {
+    const current = creatorSpec.action.knowledge_bases;
+    const exists = current.some(k => k.id === kb.id);
+    const updated = exists
+      ? current.filter(k => k.id !== kb.id)
+      : [...current, { id: kb.id, name: kb.name }];
+    updateSpecField('action', 'knowledge_bases', updated);
+  };
+
   const isFieldUpdated = (layer: string, field: string) => {
     return !!activeHighlights[`${layer}.${field}`];
   };
 
   // Render form fields depending on the active step (stepper index)
   const renderActiveStepForm = () => {
+    // Passo "Config" (índice -1): atributos do agente, NÃO é uma camada da spec.
+    if (creatorStep === -1) {
+      return (
+        <div className="spec-form-section fade-in">
+          <span className="spec-form-section-title">⚙️ Configuração do Agente</span>
+          <p className="agent-config-hint">
+            Atributos do agente (template e canal) — não é uma das 7 camadas da spec.
+          </p>
+
+          <div className="form-group">
+            <label className="form-label">🏗️ Template Master</label>
+            <select
+              className="form-input form-select"
+              value={creatorMasterTemplateKey}
+              onChange={(e) => selectCreatorTemplate(e.target.value)}
+            >
+              {masterTemplates.map(t => (
+                <option key={t.key} value={t.name}>{t.icon} {t.name}</option>
+              ))}
+            </select>
+
+            {selectedTemplate && (
+              <div className="template-hint-card">
+                <p className="template-hint-desc">{selectedTemplate.description}</p>
+                <button
+                  type="button"
+                  className="template-hint-toggle"
+                  onClick={() => setShowSkeleton((s) => !s)}
+                >
+                  {showSkeleton ? 'Ocultar esqueleto do prompt' : 'Ver esqueleto do prompt'}
+                </button>
+                {showSkeleton && (
+                  <pre className="template-hint-skeleton">{selectedTemplate.promptSkeleton}</pre>
+                )}
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="template-create-link"
+              onClick={() => { setIsAdvanced(true); setActiveView('templates'); }}
+            >
+              + Criar ou editar templates em Templates Master
+            </button>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">📡 Canal de Entrega</label>
+            <p className="agent-config-hint" style={{ marginTop: 0 }}>
+              O canal é definido pelas integrações ligadas em <strong>“Disponibilizar”</strong> (após
+              criar o agente). Novos agentes nascem publicados no <strong>Web</strong>.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     switch (creatorStep) {
       case 0:
         return (
           <div className="spec-form-section fade-in">
             <span className="spec-form-section-title">1. Identidade</span>
-
-            {/* Template Master Selector */}
-            <div className="form-group">
-              <div className="field-label-container">
-                <label className="form-label">🏗️ Template Master</label>
-                <span className="factory-badge">Fábrica</span>
-              </div>
-              <select
-                className="form-input form-select"
-                value={creatorMasterTemplateKey}
-                onChange={(e) => selectCreatorTemplate(e.target.value)}
-              >
-                {masterTemplates.map(t => (
-                  <option key={t.key} value={t.name}>{t.icon} {t.name}</option>
-                ))}
-              </select>
-
-              {selectedTemplate && (
-                <div className="template-hint-card">
-                  <p className="template-hint-desc">{selectedTemplate.description}</p>
-                  <button
-                    type="button"
-                    className="template-hint-toggle"
-                    onClick={() => setShowSkeleton((s) => !s)}
-                  >
-                    {showSkeleton ? 'Ocultar esqueleto do prompt' : 'Ver esqueleto do prompt'}
-                  </button>
-                  {showSkeleton && (
-                    <pre className="template-hint-skeleton">{selectedTemplate.promptSkeleton}</pre>
-                  )}
-                </div>
-              )}
-
-              <button
-                type="button"
-                className="template-create-link"
-                onClick={() => { setIsAdvanced(true); setActiveView('templates'); }}
-              >
-                + Criar ou editar templates em Templates Master
-              </button>
-            </div>
-
-            {/* Channel Input */}
-            <div className="form-group">
-              <div className="field-label-container">
-                <label className="form-label">📡 Canal de Entrega</label>
-                <span className="factory-badge">Fábrica</span>
-              </div>
-              <input
-                type="text"
-                className="form-input"
-                value={creatorChannel}
-                onChange={(e) => setCreatorChannel(e.target.value)}
-                placeholder="Ex: Web, WhatsApp, Internal"
-              />
-            </div>
 
             <div className="form-group">
               <div className="field-label-container">
@@ -520,7 +530,7 @@ export const Factory: React.FC = () => {
                 {creatorSpec.action.tools.map((tool, idx) => (
                   <span key={idx} className="tool-tag">
                     <span>{tool}</span>
-                    <button 
+                    <button
                       className="tool-tag-remove"
                       onClick={() => handleRemoveTool(idx)}
                       type="button"
@@ -529,6 +539,35 @@ export const Factory: React.FC = () => {
                     </button>
                   </span>
                 ))}
+              </div>
+            </div>
+
+            {/* Bases de Conhecimento (do data-studio) — referência estruturada */}
+            <div className="form-group">
+              <div className="field-label-container">
+                <label className="form-label">📚 Bases de Conhecimento</label>
+                <span className="factory-badge">data-studio</span>
+              </div>
+              <p className="kb-picker-hint">
+                Associe bases publicadas no data-studio que o agente poderá consultar.
+              </p>
+              <div className={`kb-picker-list ${isFieldUpdated('action', 'knowledge_bases') ? 'updated-glow' : ''}`}>
+                {dataStudioKnowledgeBases.map((kb) => {
+                  const checked = creatorSpec.action.knowledge_bases.some(k => k.id === kb.id);
+                  return (
+                    <label key={kb.id} className={`kb-picker-item ${checked ? 'checked' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleKnowledgeBase(kb)}
+                      />
+                      <span className="kb-picker-info">
+                        <span className="kb-picker-name">{kb.name}</span>
+                        <span className="kb-picker-meta">{kb.domain} • {kb.documentCount} docs</span>
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -585,8 +624,12 @@ export const Factory: React.FC = () => {
   // Status da camada atualmente aberta (para o botão "Continuar"). Os passos
   // de formulário são 0–6; o passo 7 é a revisão de JSON (sem camada própria).
   const layerStatuses = getLayerStatuses(creatorSpec);
-  const isFormStep = creatorStep >= 0 && creatorStep <= 6;
-  const currentLayerComplete = isFormStep ? layerStatuses[creatorStep].complete : true;
+  const isConfigStep = creatorStep === -1;
+  const isLayerStep = creatorStep >= 0 && creatorStep <= 6;
+  // "Form step" = qualquer passo com formulário (config + 7 camadas), exceto a revisão JSON (7).
+  const isFormStep = isConfigStep || isLayerStep;
+  // Config não tem completude (não é camada) → sempre "ok" para o botão Continuar.
+  const currentLayerComplete = isLayerStep ? layerStatuses[creatorStep].complete : true;
   // Só permite finalizar quando todas as 7 camadas estão completas.
   // (A navegação entre camadas continua livre — só o "Construir" é bloqueado.)
   const canBuild = missingLayers.length === 0;
@@ -601,10 +644,14 @@ export const Factory: React.FC = () => {
     PREVIEW_RUNTIME_VALUES,
   );
 
+  // Canal é derivado das integrações. Em edição, mostra o do agente; em criação,
+  // o padrão de um novo agente (Web).
+  const previewChannel = isEditing ? editingAgent!.channel : deriveChannel(DEFAULT_INTEGRATIONS);
+
   const previewPromptText = `[AGENT_SYSTEM — Pré-visualização do Prompt Compilado]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Template Master : ${creatorMasterTemplateKey}
-Canal           : ${creatorChannel}
+Canal           : ${previewChannel}
 Completude      : ${progress}%${missingLayers.length ? `  (faltam: ${missingLayers.join(', ')})` : '  ✓ pronto'}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -653,7 +700,7 @@ ${previewSkeleton}`;
           </div>
         )}
 
-        {/* Stepper Tabs */}
+        {/* Stepper Tabs (inclui o passo "Config", anterior à Identidade) */}
         <StepProgress />
 
         {/* Completion Progress Bar */}
@@ -679,7 +726,7 @@ ${previewSkeleton}`;
             os tabs do stepper continuam permitindo pular livremente) */}
         {isFormStep && (
           <div className="spec-step-nav">
-            {creatorStep > 0 ? (
+            {creatorStep > -1 ? (
               <button
                 className="spec-step-back-btn"
                 onClick={() => setCreatorStep(creatorStep - 1)}
@@ -696,10 +743,10 @@ ${previewSkeleton}`;
               <button
                 className={`spec-step-next-btn ${currentLayerComplete ? '' : 'pending'}`}
                 onClick={() => setCreatorStep(creatorStep + 1)}
-                title={currentLayerComplete ? 'Ir para a próxima camada' : 'Você pode continuar mesmo sem preencher esta camada'}
+                title={isConfigStep ? 'Ir para a Identidade' : (currentLayerComplete ? 'Ir para a próxima camada' : 'Você pode continuar mesmo sem preencher esta camada')}
                 type="button"
               >
-                {currentLayerComplete && <Check size={14} />}
+                {isLayerStep && currentLayerComplete && <Check size={14} />}
                 <span>Continuar</span>
                 <ArrowRight size={14} />
               </button>
@@ -739,7 +786,7 @@ ${previewSkeleton}`;
             </button>
           ) : (
             <button
-              onClick={() => setCreatorStep(0)}
+              onClick={() => setCreatorStep(-1)}
               style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 600 }}
               type="button"
             >
@@ -807,7 +854,7 @@ ${previewSkeleton}`;
             <div className="prompt-modal-body">
               <div className="prompt-modal-meta">
                 <span className="prompt-meta-chip">Template: <strong>{creatorMasterTemplateKey}</strong></span>
-                <span className="prompt-meta-chip">Canal: <strong>{creatorChannel}</strong></span>
+                <span className="prompt-meta-chip">Canal: <strong>{previewChannel}</strong></span>
                 <span className="prompt-meta-chip">Completude: <strong>{progress}%</strong></span>
               </div>
               <pre className="prompt-terminal">{previewPromptText}</pre>

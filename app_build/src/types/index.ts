@@ -22,6 +22,12 @@ export interface MasterTemplate {
   };
 }
 
+// Referência a uma base de conhecimento do data-studio (id + nome para exibição).
+export interface KnowledgeBaseRef {
+  id: string;
+  name: string;
+}
+
 export interface AgentSpec {
   identity: {
     agent_name: string;
@@ -59,6 +65,9 @@ export interface AgentSpec {
   action: {
     action_general_infos: string;
     tools: string[];
+    // Bases de conhecimento associadas (referência ao catálogo do data-studio).
+    // Diferente de `tools` (capacidades em texto livre): isto é RAG estruturado.
+    knowledge_bases: KnowledgeBaseRef[];
   };
   response: {
     task: string;

@@ -53,8 +53,6 @@ interface AppContextType {
   setCreatorMasterTemplateKey: (key: string) => void;
   // Selects a master template AND pre-fills empty spec fields with its defaults.
   selectCreatorTemplate: (templateName: string) => void;
-  creatorChannel: string;
-  setCreatorChannel: (channel: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -105,6 +103,9 @@ Regras de tom: {{behavior.behaviour_rules}}
 {{planning.roteiro}}
 Regras de decisão: {{planning.decision_rules}}
 
+## Bases de Conhecimento (data-studio)
+{{action.knowledge_bases}}
+
 ## Ferramentas (Action)
 {{action.tools}}
 
@@ -143,6 +144,9 @@ Idioma: {{behavior.language}} · Limite: {{behavior.max_chars}} caracteres
 ## Roteiro de Atendimento
 {{planning.roteiro}}
 
+## Bases de Conhecimento (data-studio)
+{{action.knowledge_bases}}
+
 ## Bases & Ferramentas
 {{action.tools}}
 
@@ -179,6 +183,9 @@ Idioma: {{behavior.language}} · Limite: {{behavior.max_chars}} caracteres · Em
 ## Roteiro
 {{planning.roteiro}}
 
+## Bases de Conhecimento (data-studio)
+{{action.knowledge_bases}}
+
 ## Ferramentas
 {{action.tools}}
 
@@ -205,6 +212,9 @@ Idioma: {{behavior.language}} · Limite: {{behavior.max_chars}} caracteres
 
 ## Planejamento
 {{planning.roteiro}}
+
+## Bases de Conhecimento (data-studio)
+{{action.knowledge_bases}}
 
 ## Ferramentas
 {{action.tools}}
@@ -267,6 +277,10 @@ const initialAgents: Agent[] = [
       action: {
         action_general_infos: 'Chamadas de API do GitLab e postagem de webhook Discord.',
         tools: ['GitLab API client_v2.ts', 'production_artifacts/Technical_Specification.md', 'Discord Webhook Poster'],
+        knowledge_bases: [
+          { id: 'kb-engenharia', name: 'Engenharia & Arquitetura' },
+          { id: 'kb-suporte', name: 'Base de Suporte ao Cliente' },
+        ],
       },
       response: {
         task: 'Gerar artigos de conhecimento e criar Merge Requests correspondentes.',
@@ -327,6 +341,10 @@ const initialAgents: Agent[] = [
       action: {
         action_general_infos: 'Acesso a PDFs internos de políticas corporativas.',
         tools: ['Manual do Colaborador 2026.pdf (RH)', 'Acordo Coletivo 2026_final.pdf'],
+        knowledge_bases: [
+          { id: 'kb-rh', name: 'Políticas de RH' },
+          { id: 'kb-onboarding', name: 'Onboarding de Novos Times' },
+        ],
       },
       response: {
         task: 'Auxiliar na navegação das políticas internas e fornecer links de formulários corretos.',
@@ -382,6 +400,7 @@ const defaultSpec: AgentSpec = {
   action: {
     action_general_infos: '',
     tools: [],
+    knowledge_bases: [],
   },
   response: {
     task: '',
@@ -405,6 +424,31 @@ const makeInitialCreatorConversation = (): Conversation => ({
   state_json: defaultStateJson,
   summary_text: '',
 });
+
+// Integrações padrão de um agente recém-criado (publicado no Web Widget).
+export const DEFAULT_INTEGRATIONS: Agent['integrations'] = {
+  discord: false,
+  telegram: false,
+  slack: false,
+  whatsapp: false,
+  webWidget: true,
+};
+
+// O `channel` do agente é DERIVADO das integrações ligadas no "Disponibilizar"
+// (não é mais digitado na criação). Retorna o canal primário = primeiro ativo
+// por prioridade. Mantém o campo `channel` (RF-01) como uma fonte de verdade só.
+const CHANNEL_PRIORITY: { key: keyof Agent['integrations']; label: string }[] = [
+  { key: 'webWidget', label: 'Web' },
+  { key: 'whatsapp', label: 'WhatsApp' },
+  { key: 'slack', label: 'Slack' },
+  { key: 'telegram', label: 'Telegram' },
+  { key: 'discord', label: 'Discord' },
+];
+
+export const deriveChannel = (integrations: Agent['integrations']): string => {
+  const primary = CHANNEL_PRIORITY.find(c => integrations[c.key]);
+  return primary ? primary.label : 'Não publicado';
+};
 
 // Título curto para a conversa, derivado da primeira mensagem do usuário.
 const deriveConvTitle = (content: string) =>
@@ -462,10 +506,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [creatorSpec, setCreatorSpec] = useState<AgentSpec>(defaultSpec);
-  const [creatorStep, setCreatorStep] = useState<number>(0);
+  // -1 = passo "Config" (template/canal); 0..6 = as 7 camadas; 7 = revisão JSON.
+  const [creatorStep, setCreatorStep] = useState<number>(-1);
   const [lastUpdatedFields, setLastUpdatedFields] = useState<Record<string, string[]>>({});
   const [creatorMasterTemplateKey, setCreatorMasterTemplateKey] = useState<string>('Agente de Vendas');
-  const [creatorChannel, setCreatorChannel] = useState<string>('Web');
   const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
 
   const [creatorConversation, setCreatorConversation] = useState<Conversation>(makeInitialCreatorConversation());
@@ -655,6 +699,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatedSpec.action = {
           action_general_infos: `Acesso a bases: ${toolsList.join(', ')}`,
           tools: [...updatedSpec.action.tools, ...toolsList],
+          knowledge_bases: updatedSpec.action.knowledge_bases,
         };
 
         newUpdates = {
@@ -847,8 +892,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Cópia profunda para não mutar o agente original enquanto se edita.
     setCreatorSpec(JSON.parse(JSON.stringify(agent.spec)) as AgentSpec);
     setCreatorMasterTemplateKey(agent.master_template_key);
-    setCreatorChannel(agent.channel);
-    setCreatorStep(0);
+    setCreatorStep(-1);
     setLastUpdatedFields({});
     setCreatorConversation(makeInitialCreatorConversation());
     setEditingAgentId(agentId);
@@ -868,7 +912,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...existing,
         spec: { ...creatorSpec },
         master_template_key: creatorMasterTemplateKey,
-        channel: creatorChannel,
+        // channel permanece derivado das integrações do agente.
+        channel: deriveChannel(existing.integrations),
       };
 
       setAgents(prev => prev.map(a => (a.id === editingAgentId ? updatedAgent : a)));
@@ -887,14 +932,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
       master_template_key: creatorMasterTemplateKey,
       is_active: true,
-      channel: creatorChannel,
-      integrations: {
-        discord: false,
-        telegram: false,
-        slack: false,
-        whatsapp: false,
-        webWidget: true,
-      },
+      integrations: { ...DEFAULT_INTEGRATIONS },
+      // Canal derivado das integrações (novo agente nasce publicado no Web).
+      channel: deriveChannel(DEFAULT_INTEGRATIONS),
     };
 
     setAgents(prev => [newAgent, ...prev]);
@@ -904,8 +944,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateAgentIntegrations = (agentId: string, integrations: Agent['integrations']) => {
-    setAgents(prev => prev.map(a => a.id === agentId ? { ...a, integrations } : a));
-    setSelectedAgent(prev => prev && prev.id === agentId ? { ...prev, integrations } : prev);
+    // O canal é derivado das integrações → recalcula junto.
+    const channel = deriveChannel(integrations);
+    setAgents(prev => prev.map(a => a.id === agentId ? { ...a, integrations, channel } : a));
+    setSelectedAgent(prev => prev && prev.id === agentId ? { ...prev, integrations, channel } : prev);
   };
 
   const deleteAgent = (agentId: string) => {
@@ -928,11 +970,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetCreatorChat = () => {
     setCreatorSpec(defaultSpec);
-    setCreatorStep(0);
+    setCreatorStep(-1);
     setCreatorConversation(makeInitialCreatorConversation());
     setLastUpdatedFields({});
     setCreatorMasterTemplateKey(initialMasterTemplates[0].name);
-    setCreatorChannel('Web');
     setEditingAgentId(null);
   };
 
@@ -977,8 +1018,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         creatorMasterTemplateKey,
         setCreatorMasterTemplateKey,
         selectCreatorTemplate,
-        creatorChannel,
-        setCreatorChannel,
       }}
     >
       {children}

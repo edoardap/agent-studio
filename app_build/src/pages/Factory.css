@@ -388,6 +388,68 @@
   color: var(--primary-color);
 }
 
+/* ── Configuração do Agente (passo "Config", fora das 7 camadas) ── */
+.agent-config-hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: -4px;
+}
+
+/* ── Seletor de Bases de Conhecimento (data-studio) ── */
+.kb-picker-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.kb-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: var(--radius-md);
+}
+
+.kb-picker-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 7px var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.kb-picker-item:hover {
+  border-color: var(--primary-color);
+}
+
+.kb-picker-item.checked {
+  border-color: var(--primary-color);
+  background-color: var(--primary-light);
+}
+
+.kb-picker-item input {
+  accent-color: var(--primary-color);
+}
+
+.kb-picker-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.kb-picker-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.kb-picker-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
 /* ── Editing banner: when loading an existing agent's spec ── */
 .spec-editing-banner {
   display: flex;

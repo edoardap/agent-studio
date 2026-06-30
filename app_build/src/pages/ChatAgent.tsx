@@ -124,21 +124,22 @@ export const ChatAgent: React.FC = () => {
     return () => clearTimeout(timer);
   }, [activeConversationId, activeConversation.state_json, activeConversation.summary_text]);
 
-  // Handle setting active knowledge bases
+  // Bases de conhecimento associadas (vindas do data-studio). Por padrão todas
+  // começam ativas para a conversa.
   useEffect(() => {
-    if (selectedAgent?.spec.action.tools) {
+    if (selectedAgent?.spec.action.knowledge_bases) {
       const initialKBs: Record<string, boolean> = {};
-      selectedAgent.spec.action.tools.forEach(skill => {
-        initialKBs[skill] = true; // By default all skills/bases are checked
+      selectedAgent.spec.action.knowledge_bases.forEach(kb => {
+        initialKBs[kb.id] = true;
       });
       setSelectedKBs(initialKBs);
     }
   }, [selectedAgent]);
 
-  const handleKBChange = (skill: string) => {
+  const handleKBChange = (kbId: string) => {
     setSelectedKBs(prev => ({
       ...prev,
-      [skill]: !prev[skill]
+      [kbId]: !prev[kbId]
     }));
   };
 
@@ -241,44 +242,49 @@ ${filledSkeleton}`;
           />
         </div>
 
-        {/* Knowledge bases selector checklist */}
+        {/* Knowledge bases selector checklist (associadas via data-studio) */}
         <div className="sub-sidebar-section">
           <div className="sub-sidebar-title">
             <span>Bases de Conhecimento</span>
-            <button
-              className="sub-sidebar-action"
-              onClick={() => {
-                const allChecked = Object.values(selectedKBs).every(Boolean);
-                const updated: Record<string, boolean> = {};
-                selectedAgent.spec.action.tools.forEach(skill => {
-                  updated[skill] = !allChecked;
-                });
-                setSelectedKBs(updated);
-              }}
-            >
-              {Object.values(selectedKBs).every(Boolean) ? 'Limpar' : 'Todas'}
-            </button>
+            {selectedAgent.spec.action.knowledge_bases.length > 0 && (
+              <button
+                className="sub-sidebar-action"
+                onClick={() => {
+                  const allChecked = Object.values(selectedKBs).every(Boolean);
+                  const updated: Record<string, boolean> = {};
+                  selectedAgent.spec.action.knowledge_bases.forEach(kb => {
+                    updated[kb.id] = !allChecked;
+                  });
+                  setSelectedKBs(updated);
+                }}
+              >
+                {Object.values(selectedKBs).every(Boolean) ? 'Limpar' : 'Todas'}
+              </button>
+            )}
           </div>
 
-          <div className="kb-list">
-            {selectedAgent.spec.action.tools.map((skill, index) => {
-              const docCount = 12 + (index * 42) + (index * 7);
-              return (
-                <label key={index} className="kb-item">
+          {selectedAgent.spec.action.knowledge_bases.length > 0 ? (
+            <div className="kb-list">
+              {selectedAgent.spec.action.knowledge_bases.map((kb) => (
+                <label key={kb.id} className="kb-item">
                   <input
                     type="checkbox"
                     className="kb-checkbox"
-                    checked={!!selectedKBs[skill]}
-                    onChange={() => handleKBChange(skill)}
+                    checked={!!selectedKBs[kb.id]}
+                    onChange={() => handleKBChange(kb.id)}
                   />
                   <div className="kb-item-info">
-                    <span className="kb-item-name">{skill}</span>
-                    <span className="kb-item-meta">{docCount} docs • Ativo</span>
+                    <span className="kb-item-name">{kb.name}</span>
+                    <span className="kb-item-meta">data-studio • {selectedKBs[kb.id] ? 'Ativa' : 'Inativa'}</span>
                   </div>
                 </label>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="conv-history-empty">
+              Nenhuma base associada. Associe na Fábrica (camada Ação).
+            </p>
+          )}
         </div>
 
         {/* Conversation history (abaixo das Bases de Conhecimento, como no data-studio) */}

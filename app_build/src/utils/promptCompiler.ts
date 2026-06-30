@@ -28,7 +28,11 @@ export const compilePromptSkeleton = (
       return `«${path} não preenchido»`;
     }
     if (Array.isArray(value)) {
-      return value.length ? value.map(v => `- ${v}`).join('\n') : '(nenhuma)';
+      if (!value.length) return '(nenhuma)';
+      // Itens podem ser strings (tools) ou objetos com `name` (knowledge_bases).
+      return value
+        .map(v => `- ${v && typeof v === 'object' ? (v.name ?? JSON.stringify(v)) : v}`)
+        .join('\n');
     }
     return String(value);
   });
