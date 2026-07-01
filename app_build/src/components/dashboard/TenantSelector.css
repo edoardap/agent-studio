@@ -1,35 +1,46 @@
 .top-header {
-  height: 60px;
+  height: 80px; /* h-20 */
   background-color: var(--bg-main);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--spacing-lg);
+  padding: 0 24px;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
+  min-width: 0;
 }
 
 .page-title-breadcrumb {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  color: var(--text-secondary);
-  font-size: 0.9rem;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 13px; /* text-[13px] */
+  font-weight: 400;
+  min-width: 0;
 }
 
-.breadcrumb-separator {
+.breadcrumb-separator-icon {
+  width: 12px;
+  height: 12px;
+  opacity: 0.5;
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .breadcrumb-active {
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: 500; /* font-medium */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header-right {
@@ -38,24 +49,41 @@
   gap: var(--spacing-md);
 }
 
+.header-center {
+  flex: 1;
+  max-width: 576px;
+  margin: 0 24px;
+}
+
 .global-search-container {
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .global-search-input {
-  width: 260px;
-  padding: 8px var(--spacing-md) 8px 36px;
+  width: 100%;
+  height: 40px; /* h-10 */
+  padding: 0 var(--spacing-md) 0 38px;
   border-radius: var(--radius-md);
-  font-size: 0.85rem;
+  font-size: 14px; /* text-[14px] */
   background-color: var(--bg-app);
   border: 1px solid var(--border-color);
+  outline: none;
+  box-sizing: border-box;
+  transition: all var(--transition-fast);
+}
+
+.global-search-input:focus {
+  border-color: var(--primary-color);
+  background-color: var(--bg-main);
+  box-shadow: 0 0 0 2px oklch(0.45 0.16 275 / 15%);
 }
 
 .global-search-icon {
   position: absolute;
-  left: 12px;
+  left: 14px;
   color: var(--text-muted);
   width: 16px;
   height: 16px;
@@ -82,14 +110,18 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: 8px var(--spacing-md);
+  height: 36px; /* h-9 */
+  padding: 0 var(--spacing-md);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   background-color: var(--bg-main);
   color: var(--text-primary);
-  font-size: 0.85rem;
+  font-size: 13px;
   font-weight: 500;
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all var(--transition-fast);
 }
 
 .tenant-selector-btn:hover {
@@ -97,9 +129,9 @@
 }
 
 .tenant-icon {
-  color: var(--primary-color);
-  width: 16px;
-  height: 16px;
+  color: var(--text-muted);
+  width: 15px;
+  height: 15px;
 }
 
 .tenant-dropdown {
@@ -122,6 +154,9 @@
   text-align: left;
   font-size: 0.85rem;
   color: var(--text-secondary);
+  border: none;
+  background: transparent;
+  cursor: pointer;
 }
 
 .tenant-dropdown-item:hover {
@@ -138,32 +173,43 @@
 .header-actions {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: 8px;
   border-left: 1px solid var(--border-color);
   padding-left: var(--spacing-md);
 }
 
 .header-action-btn {
-  color: var(--text-secondary);
-  padding: 8px;
+  color: var(--text-muted);
+  width: 36px; /* h-9 */
+  height: 36px;
   border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-main);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all var(--transition-fast);
+}
+
+.header-action-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .header-action-btn:hover {
   background-color: var(--bg-app);
-  color: var(--primary-color);
+  color: var(--text-primary);
 }
 
 .notification-badge {
   position: absolute;
   top: 4px;
   right: 4px;
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   background-color: var(--danger-color);
   border-radius: 50%;
   border: 1px solid var(--bg-main);

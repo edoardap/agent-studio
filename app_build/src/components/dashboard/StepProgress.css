@@ -86,7 +86,7 @@
 }
 
 .step-tab.config.active .step-tab-number {
-  background-color: var(--text-secondary);
-  border-color: var(--text-secondary);
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
   color: var(--text-light);
 }

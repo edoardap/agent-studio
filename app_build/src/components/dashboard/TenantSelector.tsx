@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { ChevronDown, Search, Bell, Sparkles, Building, Globe } from 'lucide-react';
+import { ChevronDown, ChevronRight, Search, Bell, Sparkles, Building, Globe } from 'lucide-react';
 import './TenantSelector.css';
 
 export const TenantSelector: React.FC = () => {
@@ -48,13 +48,13 @@ export const TenantSelector: React.FC = () => {
         {/* Breadcrumb path */}
         <div className="page-title-breadcrumb">
           <span>App</span>
-          <span className="breadcrumb-separator">&gt;</span>
+          <ChevronRight className="breadcrumb-separator-icon" />
           <span className="breadcrumb-active">{getBreadcrumbTitle()}</span>
         </div>
       </div>
 
-      <div className="header-right">
-        {/* Global Search */}
+      {/* Busca Global no Centro */}
+      <div className="header-center">
         <div className="global-search-container">
           <Search className="global-search-icon" />
           <input 
@@ -64,6 +64,9 @@ export const TenantSelector: React.FC = () => {
           />
           <span className="global-search-shortcut">⌘K</span>
         </div>
+      </div>
+
+      <div className="header-right">
 
         {/* Tenant selector */}
         <div className="tenant-selector-wrapper" ref={dropdownRef}>

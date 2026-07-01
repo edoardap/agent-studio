@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { Home, Wrench, Bot, Settings, LogOut, Compass, Layers, Wrench as ToolsIcon, ShieldCheck, ScrollText } from 'lucide-react';
+import { Home, Wrench, Bot, Settings, LogOut, Sparkles, Layers, Wrench as ToolsIcon, ShieldCheck, ScrollText } from 'lucide-react';
 import './Sidebar.css';
 
 export const Sidebar: React.FC = () => {
@@ -11,8 +11,12 @@ export const Sidebar: React.FC = () => {
       <div className="sidebar-top">
         {/* Header Logo */}
         <div className="sidebar-header">
-          <Compass className="sidebar-header-icon" />
-          <span>AGENTS STUDIO</span>
+          <div className="sidebar-logo-container">
+            <Sparkles className="sidebar-logo-icon" strokeWidth={2.5} />
+          </div>
+          <span className="sidebar-title">
+            Agents<span className="sidebar-header-studio"> Studio</span>
+          </span>
         </div>
 
         {/* Toggle Mode */}

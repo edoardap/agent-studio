@@ -1,96 +1,171 @@
 .sidebar {
-  width: 250px;
+  width: 260px;
   height: 100vh;
   background-color: var(--bg-sidebar);
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid oklch(0.77 0.026 270); /* Ajustado para a borda lateral real do Data Studio */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: var(--spacing-md);
+  padding: 16px 12px;
   user-select: none;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .sidebar-top {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: 16px; /* Reduzido de 20px para aproximar os elementos */
 }
 
 .sidebar-header {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  color: var(--primary-color);
-  font-family: var(--font-title);
-  font-weight: 700;
-  font-size: 1.1rem;
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: var(--spacing-xs) 4px;
 }
 
-.sidebar-header-icon {
-  width: 24px;
-  height: 24px;
+.sidebar-logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, oklch(0.38 0.15 275) 100%);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.05);
+  border: 1px solid oklch(0.45 0.16 275 / 25%);
+  flex-shrink: 0;
+}
+
+.sidebar-logo-icon {
+  color: var(--text-light);
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar-title {
+  font-family: var(--font-title);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.sidebar-header-studio {
+  color: oklch(0.18 0.018 265 / 55%); /* Ajustado para usar a cor exata do Data Studio */
+  font-weight: 400;
+  letter-spacing: -0.01em;
 }
 
 .sidebar-toggle-container {
   display: flex;
-  background-color: rgba(0, 0, 0, 0.04);
-  padding: 3px;
-  border-radius: var(--radius-md);
+  background-color: oklch(0.875 0.024 270 / 70%); /* Opacidade de 70% idêntica ao Data Studio */
+  padding: 3px; /* Reduzido de 4px para um visual mais slim */
+  border-radius: 8px;
+  border: none; /* Sem borda, como o original */
+  margin: 0 4px; /* Margem de recuo horizontal para simular o px-1 do original */
 }
 
 .sidebar-toggle-btn {
   flex: 1;
-  padding: 6px var(--spacing-sm);
-  font-size: 0.8rem;
+  height: 24px; /* Reduzido de 28px para ficar menos gordo e mais elegante */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
   font-weight: 500;
-  border-radius: calc(var(--radius-md) - 2px);
-  color: var(--text-secondary);
+  border-radius: 6px;
+  color: oklch(0.18 0.018 265 / 65%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all var(--transition-fast);
+}
+
+.sidebar-toggle-btn:hover {
+  color: oklch(0.18 0.018 265); /* Hover idêntico do Data Studio */
 }
 
 .sidebar-toggle-btn.active {
   background-color: var(--primary-color);
   color: var(--text-light);
-  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+  box-shadow: 0 2px 6px -1px oklch(0.45 0.16 275 / 35%), 0 1px 2px oklch(0 0 0 / 6%);
 }
 
 .sidebar-menu-section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: 2px;
+  margin-bottom: 8px;
 }
 
 .sidebar-menu-title {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 500;
+  color: oklch(0.18 0.018 265 / 50%);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-xs) var(--spacing-sm);
+  padding: 12px 8px 4px 8px;
+}
+
+/* O primeiro título de seção (Trabalhar) logo após o alternador deve ficar mais próximo */
+.sidebar-toggle-container + .sidebar-menu-section .sidebar-menu-title {
+  padding-top: 4px;
 }
 
 .sidebar-menu-item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  color: var(--text-secondary);
-  border-radius: var(--radius-md);
-  font-size: 0.9rem;
+  gap: 10px;
+  height: 32px;
+  padding: 0 12px;
+  color: oklch(0.18 0.018 265 / 78%);
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: 500;
   text-decoration: none;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all var(--transition-fast);
 }
 
 .sidebar-menu-item:hover {
-  background-color: rgba(0, 0, 0, 0.02);
-  color: var(--primary-color);
+  background-color: oklch(0.875 0.024 270); /* Sem opacidade como o original */
+  color: var(--text-primary);
+}
+
+.sidebar-menu-item:hover .sidebar-menu-icon {
+  color: var(--text-primary);
 }
 
 .sidebar-menu-item.active {
-  background-color: rgba(59, 68, 177, 0.08);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  border: 1px solid oklch(0.77 0.026 270); /* Usando o tom da borda da sidebar */
+  box-shadow: var(--shadow-sm);
+  font-weight: 500;
+}
+
+.sidebar-menu-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 9999px;
+  background-color: var(--primary-color);
+}
+
+.sidebar-menu-item.active .sidebar-menu-icon {
   color: var(--primary-color);
-  font-weight: 600;
 }
 
 .sidebar-menu-item:disabled {
@@ -100,12 +175,15 @@
 
 .sidebar-menu-item:disabled:hover {
   background-color: transparent;
-  color: var(--text-secondary);
+  color: oklch(0.18 0.018 265 / 78%);
 }
 
 .sidebar-menu-icon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
+  color: oklch(0.18 0.018 265 / 55%);
+  flex-shrink: 0;
+  transition: color var(--transition-fast);
 }
 
 .sidebar-footer {
@@ -125,16 +203,17 @@
 }
 
 .sidebar-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background-color: var(--primary-color);
-  color: var(--text-light);
+  background-color: var(--primary-light);
+  border: 1px solid var(--border-color);
+  color: var(--primary-color);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 11px;
   flex-shrink: 0;
 }
 
@@ -145,32 +224,44 @@
 }
 
 .sidebar-profile-name {
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .sidebar-profile-role {
-  font-size: 0.75rem;
-  color: var(--text-muted);
+  font-size: 10px;
+  color: oklch(0.18 0.018 265 / 55%);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .sidebar-logout-btn {
-  color: var(--text-muted);
-  padding: var(--spacing-xs);
-  border-radius: var(--radius-sm);
+  color: oklch(0.18 0.018 265 / 55%);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
 .sidebar-logout-btn:hover {
-  color: var(--danger-color);
-  background-color: var(--danger-bg);
+  color: var(--text-primary);
+  background-color: oklch(0.875 0.024 270);
+}
+
+.sidebar-logout-btn svg {
+  width: 14px;
+  height: 14px;
 }

@@ -1,38 +1,38 @@
 :root {
-  /* Color Tokens */
-  --primary-color: #3b44b1;
-  --primary-hover: #293092;
-  --primary-light: #eff1ff;
-  --primary-light-hover: #e0e4ff;
+  /* Color Tokens - Alinhados com o App Shell do Data Studio */
+  --primary-color: oklch(0.45 0.16 275);      /* Brand Violet/Lilac */
+  --primary-hover: oklch(0.38 0.15 275);
+  --primary-light: oklch(0.45 0.16 275 / 8%);
+  --primary-light-hover: oklch(0.45 0.16 275 / 14%);
 
-  --bg-app: #f4f6fa;
-  --bg-sidebar: #eef1f7;
-  --bg-sub-sidebar: #ffffff;
-  --bg-main: #ffffff;
+  --bg-app: oklch(0.975 0.004 250);          /* surface-2 */
+  --bg-sidebar: oklch(0.925 0.018 270);      /* sidebar */
+  --bg-sub-sidebar: oklch(1 0 0);            /* surface-1 (white) */
+  --bg-main: oklch(1 0 0);                   /* surface-1 (white) */
   
-  --text-primary: #1e2238;
-  --text-secondary: #5c627a;
-  --text-muted: #8e95b2;
-  --text-light: #ffffff;
+  --text-primary: oklch(0.20 0.012 255);     /* foreground */
+  --text-secondary: oklch(0.45 0.012 255);   /* muted-foreground */
+  --text-muted: oklch(0.58 0.012 255);
+  --text-light: oklch(1 0 0);
 
-  --border-color: #e3e6f0;
-  --border-light: #edf0f7;
+  --border-color: oklch(0.90 0.008 250);     /* border */
+  --border-light: oklch(0.93 0.006 250);
 
-  --success-color: #10b981;
-  --success-bg: #ecfdf5;
-  --success-text: #047857;
+  --success-color: oklch(0.55 0.14 155);     /* success */
+  --success-bg: oklch(0.55 0.14 155 / 8%);
+  --success-text: oklch(0.38 0.12 155);
 
-  --warning-color: #f59e0b;
-  --warning-bg: #fffbeb;
-  --warning-text: #b45309;
+  --warning-color: oklch(0.62 0.14 75);      /* warning */
+  --warning-bg: oklch(0.62 0.14 75 / 8%);
+  --warning-text: oklch(0.45 0.12 75);
 
-  --danger-color: #ef4444;
-  --danger-bg: #fef2f2;
-  --danger-text: #b91c1c;
+  --danger-color: oklch(0.55 0.20 25);       /* destructive */
+  --danger-bg: oklch(0.55 0.20 25 / 8%);
+  --danger-text: oklch(0.38 0.18 25);
 
   /* Typography */
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-title: 'Outfit', 'Inter', sans-serif;
+  --font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-title: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* Spacing */
   --spacing-xs: 4px;
@@ -47,10 +47,11 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(50, 50, 93, 0.05), 0 1px 1px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 4px 6px rgba(50, 50, 93, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
-  --shadow-lg: 0 10px 15px -3px rgba(50, 50, 93, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+  /* Shadows - data-studio style */
+  --shadow-sm: 0 1px 2px oklch(0.20 0.02 255 / 0.06);
+  --shadow-md: 0 2px 6px oklch(0.20 0.02 255 / 0.06), 0 8px 24px -8px oklch(0.20 0.02 255 / 0.10);
+  --shadow-lg: 0 4px 12px oklch(0.20 0.02 255 / 0.08), 0 24px 48px -16px oklch(0.20 0.02 255 / 0.14);
+  --shadow-glow: 0 0 0 1px oklch(0.45 0.16 275 / 0.18);
 
   /* Transitions */
   --transition-fast: 0.15s ease;

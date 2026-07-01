@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
 
+html {
+  font-size: 14.5px; /* Reduz a escala rem base de 16px para 14.5px, compactando as fontes e elementos do app */
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

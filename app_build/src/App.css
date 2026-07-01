@@ -17,6 +17,6 @@
 .content-container {
   flex: 1;
   overflow: hidden;
-  height: calc(100vh - 60px); /* 60px is the header height */
+  height: calc(100vh - 80px); /* 80px is the header height */
   width: 100%;
 }
