@@ -149,14 +149,6 @@ export const Factory: React.FC = () => {
               + Criar ou editar templates em Templates Master
             </button>
           </div>
-
-          <div className="form-group">
-            <label className="form-label">📡 Canal de Entrega</label>
-            <p className="agent-config-hint" style={{ marginTop: 0 }}>
-              O canal é definido pelas integrações ligadas em <strong>“Disponibilizar”</strong> (após
-              criar o agente). Novos agentes nascem publicados no <strong>Web</strong>.
-            </p>
-          </div>
         </div>
       );
     }

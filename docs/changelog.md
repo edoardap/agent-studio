@@ -12,11 +12,11 @@
   Viraram um **passo próprio "⚙️ Config"** no stepper, **antes da Identidade** (com ícone de engrenagem e
   borda tracejada para indicar que NÃO é uma camada; não conta no progresso %). A criação começa nele.
   — `pages/Factory.tsx` (+`.css`), `components/dashboard/StepProgress.tsx` (+`.css`), `context/AppContext.tsx`
-- **Canal deixou de ser digitado — agora é derivado das integrações** — o campo de texto "Canal de Entrega"
-  saiu da criação (era redundante com os canais do "Disponibilizar", que nem está no documento). O
-  `channel` do agente passa a ser **derivado das integrações ligadas** (`deriveChannel` = primeiro canal
-  ativo por prioridade; novo agente nasce no "Web"). `updateAgentIntegrations` recalcula o canal ao
-  ligar/desligar integrações. Uma fonte de verdade só. — `context/AppContext.tsx`, `pages/Factory.tsx`
+- **Canal deixou de ser digitado e foi removido do fluxo visual de criação** — o campo de texto e o bloco
+  informativo "📡 Canal de Entrega" foram totalmente removidos da tela da Fábrica (era redundante com as
+  integrações). O `channel` do agente agora é **derivado dinamicamente das integrações ligadas** (novo agente
+  nasce no canal "Web" por padrão). `updateAgentIntegrations` recalcula o canal ao ligar/desligar
+  integrações na aba "Disponibilizar" pós-criação. — `context/AppContext.tsx`, `pages/Factory.tsx`
 - **Associar bases de conhecimento do data-studio (camada Ação)** — novo campo estruturado
   `action.knowledge_bases: {id, name}[]` na spec (separado do `tools` de texto livre), referenciando o
   catálogo do data-studio (`data/knowledgeBaseCatalog.ts`, espelhando `knowledgeBases` de lá). Seletor
