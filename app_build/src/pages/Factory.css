@@ -326,6 +326,15 @@
   background-color: var(--bg-app);
 }
 
+.form-select:disabled {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: not-allowed;
+  background-color: var(--bg-main);
+  opacity: 0.85;
+}
+
 .form-select:focus {
   outline: none;
   border-color: var(--primary-color);

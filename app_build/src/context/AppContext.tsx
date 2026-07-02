@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { Tenant, Agent, Message, Conversation, AgentSpec, ConversationStateJson, MasterTemplate } from '../types';
 import { getMissingLayers } from '../utils/promptCompiler';
+import { defaultMasterTemplate } from '../data/defaultTemplate';
 
 type ActiveView = 'home' | 'factory' | 'agents' | 'chat-agent' | 'templates';
 
@@ -72,6 +73,7 @@ Histórico recente: {{recent_messages}}
 Mensagem atual do usuário: {{user_message}}`;
 
 const initialMasterTemplates: MasterTemplate[] = [
+  defaultMasterTemplate,
   {
     key: 'Agente de Vendas',
     name: 'Agente de Vendas',
@@ -492,6 +494,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setIsAdvanced = (value: boolean) => {
     setIsAdvancedState(value);
     localStorage.setItem('agentstudio.mode', value ? 'advanced' : 'simple');
+    if (!value) {
+      selectCreatorTemplate('Template Padrão');
+    }
   };
 
   const updateMasterTemplate = (key: string, patch: Partial<MasterTemplate>) => {
@@ -509,7 +514,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // -1 = passo "Config" (template/canal); 0..6 = as 7 camadas; 7 = revisão JSON.
   const [creatorStep, setCreatorStep] = useState<number>(-1);
   const [lastUpdatedFields, setLastUpdatedFields] = useState<Record<string, string[]>>({});
-  const [creatorMasterTemplateKey, setCreatorMasterTemplateKey] = useState<string>('Agente de Vendas');
+  const [creatorMasterTemplateKey, setCreatorMasterTemplateKey] = useState<string>(() =>
+    localStorage.getItem('agentstudio.mode') === 'advanced' ? 'Agente de Vendas' : 'Template Padrão'
+  );
   const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
 
   const [creatorConversation, setCreatorConversation] = useState<Conversation>(makeInitialCreatorConversation());

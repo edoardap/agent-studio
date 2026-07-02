@@ -5,7 +5,7 @@ import { getLayerStatuses } from '../../utils/promptCompiler';
 import './StepProgress.css';
 
 export const StepProgress: React.FC = () => {
-  const { creatorStep, setCreatorStep, creatorSpec } = useApp();
+  const { creatorStep, setCreatorStep, creatorSpec, isAdvanced } = useApp();
 
   // Os checkmarks refletem a COMPLETUDE real de cada camada (não a posição
   // da aba). A navegação continua livre: dá pra clicar em qualquer passo.

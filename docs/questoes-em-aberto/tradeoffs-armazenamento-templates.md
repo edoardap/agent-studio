@@ -45,3 +45,12 @@ Para plataformas de agentes de IA, a abordagem recomendada costuma ser **híbrid
 1. Mantém-se uma tabela de `master_templates` para servir como **catálogo/biblioteca** de templates padrão.
 2. Quando o usuário cria um agente baseado em um template master, o sistema **copia o conteúdo** do template master para uma coluna de prompt local na tabela de `agents` (instanciação / copy-on-write).
 3. O agente mantém uma referência (`master_template_id`) apenas para fins de auditoria e telemetria, mas executa e edita sua própria cópia local do template. Isso preserva o isolamento de cada agente e permite a personalização completa sem perder os benefícios de um catálogo centralizado.
+
+---
+
+## Simplicidade vs. Avançado (Exposição Progressiva)
+
+Para equilibrar a facilidade de uso do usuário iniciante com o controle necessário para desenvolvedores avançados, adota-se a seguinte estratégia na interface:
+
+- **Modo Simples:** O conceito de "Template Master" é ocultado do fluxo. O sistema assume um **template master padrão fixo** (único) nos bastidores. O usuário foca apenas no preenchimento de suas necessidades via linguagem natural no copiloto ou formulários.
+- **Modo Avançado:** Habilita-se a seleção do catálogo de templates master disponíveis no banco de dados e abre-se a possibilidade de criar e customizar novos templates master globais (ou desmembrar um agente em múltiplos templates independentes/compostos).

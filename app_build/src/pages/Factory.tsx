@@ -30,6 +30,7 @@ export const Factory: React.FC = () => {
     selectCreatorTemplate,
     masterTemplates,
     setActiveView,
+    isAdvanced,
     setIsAdvanced,
     editingAgentId,
     agents,
@@ -75,6 +76,7 @@ export const Factory: React.FC = () => {
     }
   }, [lastUpdatedFields]);
 
+
   const handleAddTool = () => {
     if (newTool.trim()) {
       const updatedTools = [...creatorSpec.action.tools, newTool.trim()];
@@ -119,6 +121,7 @@ export const Factory: React.FC = () => {
               className="form-input form-select"
               value={creatorMasterTemplateKey}
               onChange={(e) => selectCreatorTemplate(e.target.value)}
+              disabled={!isAdvanced}
             >
               {masterTemplates.map(t => (
                 <option key={t.key} value={t.name}>{t.icon} {t.name}</option>
@@ -141,13 +144,15 @@ export const Factory: React.FC = () => {
               </div>
             )}
 
-            <button
-              type="button"
-              className="template-create-link"
-              onClick={() => { setIsAdvanced(true); setActiveView('templates'); }}
-            >
-              + Criar ou editar templates em Templates Master
-            </button>
+            {isAdvanced && (
+              <button
+                type="button"
+                className="template-create-link"
+                onClick={() => { setIsAdvanced(true); setActiveView('templates'); }}
+              >
+                + Criar ou editar templates em Templates Master
+              </button>
+            )}
           </div>
         </div>
       );
