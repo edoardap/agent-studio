@@ -31,7 +31,8 @@ Neste modelo, cada uma das 7 camadas da especificação é representada por uma 
 - **Integridade Referencial Estrita:** Permite o uso de tipos de dados rigorosos, constraints de banco de dados (`NOT NULL`, `CHECK`) e chaves estrangeiras clássicas. A deleção de um documento ou ferramenta associada pode ser controlada com `ON DELETE RESTRICT` ou `ON DELETE CASCADE`.
 - **Garantia de Tipagem no Banco:** O schema do próprio banco de dados dita a estrutura correta de cada camada, servindo também como documentação viva e limpa.
 - **Concorrência Isolada:** Lógica diferente do sistema pode ler ou gravar em `agent_security` sem interferir ou travar dados de `agent_identity`.
-- **Reaproveitamento Dinâmico de Camadas (DRY):** Facilita o compartilhamento de registros de camadas comuns (ex: uma política de segurança global) entre múltiplos agentes via relacionamentos de chaves estrangeiras. Atualizações na tabela da camada propagam-se instantaneamente para todos os agentes associados.
+- **Reaproveitamento Dinâmico de Camadas (DRY):** Facilita o compartilhamento de registros de camadas comuns entre múltiplos agentes via relacionamentos de chaves estrangeiras.
+  - *Exemplo Prático:* Você pode criar uma única configuração de segurança restrita e robusta (ex: "Política de Segurança Padrão ACME V1") e associá-la a 50 agentes diferentes. Se a equipe de segurança atualizar essa política na tabela \`agent_security\`, a alteração é propagada instantaneamente para todos os 50 agentes sem duplicar dados.
 
 ### Desvantagens (Contras)
 - **Alta Rigidez de Schema:** Qualquer alteração conceitual na spec do agente (como a adição de uma nova camada de Memória ou novos parâmetros em Planejamento) exige a elaboração e execução de migrações de banco, reduzindo a agilidade do time.
