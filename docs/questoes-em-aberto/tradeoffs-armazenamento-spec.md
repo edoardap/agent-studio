@@ -20,6 +20,7 @@ Neste modelo, toda a especificação de 7 camadas do agente é serializada e arm
 - **Ausência de Integridade de Chaves Estrangeiras:** Se a camada de `Context` apontar para arquivos (`document_ids`) ou `Action` apontar para ferramentas (`tool_ids`), o banco de dados não consegue impor restrições de integridade referencial (`FK`) dentro do JSON. A integridade precisa ser controlada na aplicação.
 - **Validação de Schema Fraca no Banco de Dados:** Não há validação nativa automática de tipos e obrigatoriedade de campos sem implementar mecanismos complexos de JSON Schema.
 - **Concorrência:** Atualizações simultâneas em diferentes camadas do agente no mesmo registro podem sofrer de problemas de colisão ("race conditions"), exigindo estratégias de locking otimista baseadas em número de versão ou timestamp.
+- **Dificuldade de Compartilhamento e Reuso:** Dificulta a reutilização direta de uma mesma camada (ex: regras de segurança ou comportamento padronizadas) entre múltiplos agentes. Para reaproveitar, é necessário duplicar os dados no JSON ou criar lógica complexa de herança/mesclagem na aplicação.
 
 ---
 
@@ -30,6 +31,7 @@ Neste modelo, cada uma das 7 camadas da especificação é representada por uma 
 - **Integridade Referencial Estrita:** Permite o uso de tipos de dados rigorosos, constraints de banco de dados (`NOT NULL`, `CHECK`) e chaves estrangeiras clássicas. A deleção de um documento ou ferramenta associada pode ser controlada com `ON DELETE RESTRICT` ou `ON DELETE CASCADE`.
 - **Garantia de Tipagem no Banco:** O schema do próprio banco de dados dita a estrutura correta de cada camada, servindo também como documentação viva e limpa.
 - **Concorrência Isolada:** Lógica diferente do sistema pode ler ou gravar em `agent_security` sem interferir ou travar dados de `agent_identity`.
+- **Reaproveitamento Dinâmico de Camadas (DRY):** Facilita o compartilhamento de registros de camadas comuns (ex: uma política de segurança global) entre múltiplos agentes via relacionamentos de chaves estrangeiras. Atualizações na tabela da camada propagam-se instantaneamente para todos os agentes associados.
 
 ### Desvantagens (Contras)
 - **Alta Rigidez de Schema:** Qualquer alteração conceitual na spec do agente (como a adição de uma nova camada de Memória ou novos parâmetros em Planejamento) exige a elaboração e execução de migrações de banco, reduzindo a agilidade do time.
