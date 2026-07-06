@@ -1,13 +1,19 @@
 import React, { createContext, useContext, useState } from 'react';
-import type { Tenant, Agent, Message, Conversation, AgentSpec, ConversationStateJson, MasterTemplate } from '../types';
+import type { Tenant, Agent, Message, Conversation, AgentSpec, ConversationStateJson, MasterTemplate, Tool } from '../types';
 import { getMissingLayers } from '../utils/promptCompiler';
 import { defaultMasterTemplate } from '../data/defaultTemplate';
 
-type ActiveView = 'home' | 'factory' | 'agents' | 'chat-agent' | 'templates';
+type ActiveView = 'home' | 'factory' | 'agents' | 'chat-agent' | 'templates' | 'integrations';
 
 interface AppContextType {
   activeView: ActiveView;
   setActiveView: (view: ActiveView) => void;
+  // Tools/Integrations Catalog
+  toolsList: Tool[];
+  addTool: (tool: Omit<Tool, 'id'>) => void;
+  updateTool: (id: string, patch: Partial<Tool>) => void;
+  deleteTool: (id: string) => void;
+  toggleToolAssociation: (toolId: string, agentId: string) => void;
   // Simple vs Advanced UI mode (progressive disclosure)
   isAdvanced: boolean;
   setIsAdvanced: (value: boolean) => void;
@@ -365,6 +371,51 @@ const initialAgents: Agent[] = [
   },
 ];
 
+const initialTools: Tool[] = [
+  {
+    id: 'tool-1',
+    name: 'GitLab API client_v2.ts',
+    description: 'Permite consultar commits, merges e issues no repositório GitLab.',
+    type: 'custom',
+    method: 'GET',
+    url: 'https://api.gitlab.acme.ai/v4/projects/123/issues',
+    headers: '{\n  "Authorization": "Bearer glpat-xxxxxx"\n}',
+    schema: '{\n  "type": "object",\n  "properties": {\n    "state": { "type": "string", "enum": ["opened", "closed"] }\n  }\n}',
+    associatedAgentIds: ['agent-1'],
+  },
+  {
+    id: 'tool-2',
+    name: 'Discord Webhook Poster',
+    description: 'Envia alertas e resumos de documentação para canais do Discord.',
+    type: 'custom',
+    method: 'POST',
+    url: 'https://discord.com/api/webhooks/123456/7891011',
+    headers: '{\n  "Content-Type": "application/json"\n}',
+    schema: '{\n  "type": "object",\n  "properties": {\n    "content": { "type": "string" }\n  },\n  "required": ["content"]\n}',
+    associatedAgentIds: ['agent-1'],
+  },
+  {
+    id: 'tool-3',
+    name: 'Postgres-MCP Server',
+    description: 'MCP Server para leitura de tabelas e execução de queries analíticas de suporte no PostgreSQL.',
+    type: 'mcp',
+    mcpTransport: 'stdio',
+    mcpCommand: 'npx',
+    mcpArgs: ['-y', '@modelcontextprotocol/server-postgres', 'postgresql://postgres:acme123@localhost:5432/acme_db'],
+    associatedAgentIds: [],
+  },
+  {
+    id: 'tool-4',
+    name: 'GitHub-MCP Server',
+    description: 'Model Context Protocol server para buscar código e ler pull requests no GitHub.',
+    type: 'mcp',
+    mcpTransport: 'stdio',
+    mcpCommand: 'npx',
+    mcpArgs: ['-y', '@modelcontextprotocol/server-github'],
+    associatedAgentIds: [],
+  }
+];
+
 const defaultSpec: AgentSpec = {
   identity: {
     agent_name: '',
@@ -490,6 +541,101 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
   const [masterTemplates, setMasterTemplates] = useState<MasterTemplate[]>(initialMasterTemplates);
   const [activeTenant, setActiveTenant] = useState<Tenant>(initialTenants[0]);
+
+  const [toolsList, setToolsList] = useState<Tool[]>(initialTools);
+
+  const addTool = (tool: Omit<Tool, 'id'>) => {
+    const newTool: Tool = {
+      ...tool,
+      id: `tool-${Date.now()}`,
+    };
+    setToolsList(prev => [...prev, newTool]);
+  };
+
+  const updateTool = (id: string, patch: Partial<Tool>) => {
+    setToolsList(prev => prev.map(t => t.id === id ? { ...t, ...patch } : t));
+    
+    if (patch.name) {
+      const oldTool = toolsList.find(t => t.id === id);
+      if (oldTool && oldTool.name !== patch.name) {
+        const oldName = oldTool.name;
+        const newName = patch.name;
+        setAgents(prev => prev.map(a => {
+          if (a.spec.action.tools.includes(oldName)) {
+            return {
+              ...a,
+              spec: {
+                ...a.spec,
+                action: {
+                  ...a.spec.action,
+                  tools: a.spec.action.tools.map(name => name === oldName ? newName : name)
+                }
+              }
+            };
+          }
+          return a;
+        }));
+      }
+    }
+  };
+
+  const deleteTool = (id: string) => {
+    const tool = toolsList.find(t => t.id === id);
+    if (tool) {
+      const toolName = tool.name;
+      setAgents(prev => prev.map(a => {
+        if (a.spec.action.tools.includes(toolName)) {
+          return {
+            ...a,
+            spec: {
+              ...a.spec,
+              action: {
+                ...a.spec.action,
+                tools: a.spec.action.tools.filter(name => name !== toolName)
+              }
+            }
+          };
+        }
+        return a;
+      }));
+    }
+    setToolsList(prev => prev.filter(t => t.id !== id));
+  };
+
+  const toggleToolAssociation = (toolId: string, agentId: string) => {
+    let toolName = '';
+    setToolsList(prev => prev.map(t => {
+      if (t.id === toolId) {
+        toolName = t.name;
+        const exists = t.associatedAgentIds.includes(agentId);
+        const next = exists
+          ? t.associatedAgentIds.filter(id => id !== agentId)
+          : [...t.associatedAgentIds, agentId];
+        return { ...t, associatedAgentIds: next };
+      }
+      return t;
+    }));
+
+    setAgents(prev => prev.map(a => {
+      if (a.id === agentId) {
+        const exists = a.spec.action.tools.includes(toolName);
+        const nextTools = exists
+          ? a.spec.action.tools.filter(name => name !== toolName)
+          : [...a.spec.action.tools, toolName];
+        return {
+          ...a,
+          spec: {
+            ...a.spec,
+            action: {
+              ...a.spec.action,
+              tools: nextTools
+            }
+          }
+        };
+      }
+      return a;
+    }));
+  };
 
   const setIsAdvanced = (value: boolean) => {
     setIsAdvancedState(value);
@@ -924,14 +1070,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
 
       setAgents(prev => prev.map(a => (a.id === editingAgentId ? updatedAgent : a)));
+
+      // Sincroniza a associação das tools no catálogo
+      setToolsList(prev => prev.map(t => {
+        const isAssociated = creatorSpec.action.tools.includes(t.name);
+        const hasAgent = t.associatedAgentIds.includes(editingAgentId);
+        if (isAssociated && !hasAgent) {
+          return { ...t, associatedAgentIds: [...t.associatedAgentIds, editingAgentId] };
+        } else if (!isAssociated && hasAgent) {
+          return { ...t, associatedAgentIds: t.associatedAgentIds.filter(id => id !== editingAgentId) };
+        }
+        return t;
+      }));
+
       resetCreatorChat();
       setSelectedAgent(updatedAgent);
       setActiveView('agents');
       return;
     }
 
+    const newAgentId = `agent-${Date.now()}`;
     const newAgent: Agent = {
-      id: `agent-${Date.now()}`,
+      id: newAgentId,
       model: 'Gemini 3.5 Flash',
       temperature: 0.4,
       spec: { ...creatorSpec },
@@ -945,6 +1105,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setAgents(prev => [newAgent, ...prev]);
+
+    // Sincroniza a associação das tools no catálogo
+    setToolsList(prev => prev.map(t => {
+      const isAssociated = creatorSpec.action.tools.includes(t.name);
+      if (isAssociated) {
+        return { ...t, associatedAgentIds: [...t.associatedAgentIds, newAgentId] };
+      }
+      return t;
+    }));
+
     resetCreatorChat();
     setSelectedAgent(newAgent);
     setActiveView('agents');
@@ -989,6 +1159,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         activeView,
         setActiveView,
+        toolsList,
+        addTool,
+        updateTool,
+        deleteTool,
+        toggleToolAssociation,
         isAdvanced,
         setIsAdvanced,
         masterTemplates,

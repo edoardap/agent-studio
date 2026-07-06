@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { Home, Wrench, Bot, Settings, LogOut, Sparkles, Layers, Wrench as ToolsIcon, ShieldCheck, ScrollText } from 'lucide-react';
+import { Home, Wrench, Bot, Settings, LogOut, Sparkles, Layers, ShieldCheck, ScrollText, Cpu } from 'lucide-react';
 import './Sidebar.css';
 
 export const Sidebar: React.FC = () => {
@@ -62,6 +62,14 @@ export const Sidebar: React.FC = () => {
             <Bot className="sidebar-menu-icon" />
             <span>Agentes Criados</span>
           </button>
+
+          <button
+            onClick={() => setActiveView('integrations')}
+            className={`sidebar-menu-item ${activeView === 'integrations' ? 'active' : ''}`}
+          >
+            <Cpu className="sidebar-menu-icon" />
+            <span>Integrações</span>
+          </button>
         </div>
 
         {/* Advanced-only: Engine / Motor section */}
@@ -75,11 +83,6 @@ export const Sidebar: React.FC = () => {
             >
               <Layers className="sidebar-menu-icon" />
               <span>Templates Master</span>
-            </button>
-
-            <button className="sidebar-menu-item" title="Em breve" disabled>
-              <ToolsIcon className="sidebar-menu-icon" />
-              <span>Catálogo de Tools</span>
             </button>
 
             <button className="sidebar-menu-item" title="Em breve" disabled>

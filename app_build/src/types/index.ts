@@ -3,6 +3,25 @@ export interface Tenant {
   name: string;
 }
 
+export interface Tool {
+  id: string;
+  name: string;
+  description: string;
+  type: 'mcp' | 'custom';
+  // MCP fields
+  mcpTransport?: 'stdio' | 'sse';
+  mcpCommand?: string;
+  mcpArgs?: string[];
+  mcpSseUrl?: string;
+  // Custom fields
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  url?: string;
+  headers?: string; // stringified JSON
+  schema?: string;  // stringified JSON schema
+  associatedAgentIds: string[];
+}
+
+
 export interface MasterTemplate {
   key: string;
   name: string;

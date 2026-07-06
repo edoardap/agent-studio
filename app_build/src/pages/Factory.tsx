@@ -34,6 +34,7 @@ export const Factory: React.FC = () => {
     setIsAdvanced,
     editingAgentId,
     agents,
+    toolsList,
   } = useApp();
 
   const selectedTemplate = masterTemplates.find(t => t.name === creatorMasterTemplateKey);
@@ -41,7 +42,6 @@ export const Factory: React.FC = () => {
   const isEditing = !!editingAgent;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [newTool, setNewTool] = useState('');
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [showPromptModal, setShowPromptModal] = useState(false);
   
@@ -76,19 +76,6 @@ export const Factory: React.FC = () => {
     }
   }, [lastUpdatedFields]);
 
-
-  const handleAddTool = () => {
-    if (newTool.trim()) {
-      const updatedTools = [...creatorSpec.action.tools, newTool.trim()];
-      updateSpecField('action', 'tools', updatedTools);
-      setNewTool('');
-    }
-  };
-
-  const handleRemoveTool = (index: number) => {
-    const updatedTools = creatorSpec.action.tools.filter((_, i) => i !== index);
-    updateSpecField('action', 'tools', updatedTools);
-  };
 
   // Associa/desassocia uma base de conhecimento do catálogo do data-studio.
   const toggleKnowledgeBase = (kb: { id: string; name: string }) => {
@@ -497,47 +484,54 @@ export const Factory: React.FC = () => {
             
             <div className="form-group">
               <div className="field-label-container">
-                <label className="form-label">Ferramentas (Tools)</label>
+                <label className="form-label">🛠️ Selecionar Ferramentas do Catálogo</label>
                 {isFieldUpdated('action', 'tools') && <span className="updated-badge">Atualizado</span>}
               </div>
-              <div className={`tools-adder-container ${isFieldUpdated('action', 'tools') ? 'updated-glow' : ''}`} style={{ borderRadius: 'var(--radius-md)' }}>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={newTool}
-                  onChange={(e) => setNewTool(e.target.value)}
-                  placeholder="Ex: GitLab API client_v2"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddTool();
-                    }
-                  }}
-                />
-                <button 
-                  className="tools-adder-btn"
-                  onClick={handleAddTool}
-                  type="button"
-                >
-                  <Plus size={14} />
-                </button>
+              <p className="kb-picker-hint">
+                Associe ferramentas do catálogo para que o agente possa utilizá-las.
+              </p>
+              <div className="tools-selector-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '160px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '10px', backgroundColor: 'var(--bg-app)', marginBottom: '8px' }}>
+                {toolsList.map(tool => {
+                  const isChecked = creatorSpec.action.tools.includes(tool.name);
+                  return (
+                    <label key={tool.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', backgroundColor: isChecked ? 'var(--primary-light)' : 'var(--bg-main)', borderColor: isChecked ? 'var(--primary-color)' : 'var(--border-color)', transition: 'all 0.15s ease' }}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        style={{ marginTop: '4px' }}
+                        onChange={() => {
+                          const updated = isChecked
+                            ? creatorSpec.action.tools.filter(name => name !== tool.name)
+                            : [...creatorSpec.action.tools, tool.name];
+                          updateSpecField('action', 'tools', updated);
+                        }}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {tool.name}
+                          <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', backgroundColor: tool.type === 'mcp' ? '#e0f2fe' : '#fef3c7', color: tool.type === 'mcp' ? '#0369a1' : '#b45309', fontWeight: 700 }}>
+                            {tool.type.toUpperCase()}
+                          </span>
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{tool.description}</span>
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
 
-              <div className="tools-tags-list">
-                {creatorSpec.action.tools.map((tool, idx) => (
-                  <span key={idx} className="tool-tag">
-                    <span>{tool}</span>
-                    <button
-                      className="tool-tag-remove"
-                      onClick={() => handleRemoveTool(idx)}
-                      type="button"
-                    >
-                      <Trash2 size={10} />
-                    </button>
-                  </span>
-                ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveView('integrations')}
+                  style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 600 }}
+                >
+                  ⚙️ Gerenciar Ferramentas no Catálogo
+                </button>
               </div>
             </div>
+
+
 
             {/* Bases de Conhecimento (do data-studio) — referência estruturada */}
             <div className="form-group">
