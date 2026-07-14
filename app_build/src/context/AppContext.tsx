@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState } from 'react';
-import type { Tenant, Agent, Message, Conversation, AgentSpec, ConversationStateJson, MasterTemplate, Tool } from '../types';
+import type { Tenant, Agent, Message, Conversation, AgentSpec, ConversationStateJson, MasterTemplate, Tool, Squad, SquadMember, Task, SquadTemplate } from '../types';
 import { getMissingLayers } from '../utils/promptCompiler';
 import { defaultMasterTemplate } from '../data/defaultTemplate';
 
-type ActiveView = 'home' | 'factory' | 'agents' | 'chat-agent' | 'templates' | 'integrations';
+type ActiveView = 'home' | 'factory' | 'agents' | 'chat-agent' | 'templates' | 'integrations' | 'squads' | 'marketplace' | 'organograma' | 'simulator';
 
 interface AppContextType {
   activeView: ActiveView;
@@ -54,6 +54,19 @@ interface AppContextType {
   updateAgentIntegrations: (agentId: string, integrations: Agent['integrations']) => void;
   deleteAgent: (agentId: string) => void;
   resetCreatorChat: () => void;
+  // Squads
+  squads: Squad[];
+  createSquad: (squad: Omit<Squad, 'id' | 'createdAt'>) => void;
+  deleteSquad: (squadId: string) => void;
+  addAgentToSquad: (squadId: string, member: SquadMember) => void;
+  removeAgentFromSquad: (squadId: string, agentId: string) => void;
+  updateSquad: (squadId: string, patch: Partial<Squad>) => void;
+  // Tasks / Kanban
+  tasks: Task[];
+  moveTask: (taskId: string, status: Task['status']) => void;
+  // Squad Templates (Marketplace)
+  squadTemplates: SquadTemplate[];
+  installSquadTemplate: (templateId: string) => void;
   toggleAgentActiveStatus: (agentId: string) => void;
   // Factory new fields
   creatorMasterTemplateKey: string;
@@ -535,7 +548,7 @@ const makeAgentConversation = (agent: Agent, firstUserContent?: string): Convers
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeView, setActiveView] = useState<ActiveView>('factory');
+  const [activeView, setActiveView] = useState<ActiveView>('organograma');
   const [isAdvanced, setIsAdvancedState] = useState<boolean>(
     () => localStorage.getItem('agentstudio.mode') === 'advanced'
   );
@@ -652,6 +665,149 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addMasterTemplate = (template: MasterTemplate) => {
     setMasterTemplates(prev => [...prev, template]);
   };
+  // ── Squads ─────────────────────────────────────────────────────────────
+  const initialSquads: Squad[] = [
+    {
+      id: 'squad-1',
+      name: 'Squad de Viagens',
+      description: 'Atende clientes, monta roteiros e orça pacotes de viagem.',
+      orchestratorAgentId: 'agent-1',
+      members: [
+        { agentId: 'agent-1', role: 'orchestrator', allowedTools: ['search_tool', 'task_tool'] },
+        { agentId: 'agent-2', role: 'especialista', allowedTools: ['search_tool'] },
+      ],
+      assignmentRules: [
+        { id: 'r1', condition: "ticket.tipo == 'roteiro'", action: 'atribuir_para(Roteirista)' },
+        { id: 'r2', condition: "ticket.tipo == 'orcamento'", action: 'atribuir_para(Emissor)' },
+        { id: 'r3', condition: "ticket.tipo == 'pagamento'", action: 'atribuir_para(humano)' },
+      ],
+      status: 'active',
+      createdAt: new Date().toISOString(),
+    },
+  ];
+
+  const [squads, setSquads] = useState<Squad[]>(initialSquads);
+
+  const createSquad = (squad: Omit<Squad, 'id' | 'createdAt'>) => {
+    const newSquad: Squad = { ...squad, id: `squad-${Date.now()}`, createdAt: new Date().toISOString() };
+    setSquads(prev => [...prev, newSquad]);
+  };
+
+  const deleteSquad = (squadId: string) => {
+    setSquads(prev => prev.filter(s => s.id !== squadId));
+  };
+
+  const addAgentToSquad = (squadId: string, member: SquadMember) => {
+    setSquads(prev => prev.map(s =>
+      s.id === squadId ? { ...s, members: [...s.members.filter(m => m.agentId !== member.agentId), member] } : s
+    ));
+  };
+
+  const removeAgentFromSquad = (squadId: string, agentId: string) => {
+    setSquads(prev => prev.map(s =>
+      s.id === squadId ? { ...s, members: s.members.filter(m => m.agentId !== agentId) } : s
+    ));
+  };
+
+  const updateSquad = (squadId: string, patch: Partial<Squad>) => {
+    setSquads(prev => prev.map(s => s.id === squadId ? { ...s, ...patch } : s));
+  };
+  // ── Tasks (Kanban) ──────────────────────────────────────────────────────────────
+  const initialTasks: Task[] = [
+    { id: 't1', squadId: 'squad-1', title: 'Montar roteiro Paris — 7 dias, casal, gastronomia', description: 'Cliente quer itinerário detalhado com restaurantes Michelin.', priority: 'P2', status: 'em_andamento', assignedAgentId: 'agent-2', createdAt: '2026-07-09T10:00:00Z', updatedAt: '2026-07-09T11:30:00Z' },
+    { id: 't2', squadId: 'squad-1', title: 'Orçar passagem São Paulo → Paris (Outubro)', description: 'Buscar voos disponíveis, ida e volta, classe econômica.', priority: 'P3', status: 'entrada', createdAt: '2026-07-09T11:00:00Z', updatedAt: '2026-07-09T11:00:00Z' },
+    { id: 't3', squadId: 'squad-1', title: 'Cliente quer cancelar reserva de hotel', description: 'Solicitação de cancelamento — exige aprovação humana.', priority: 'P1', status: 'aguardando_humano', assignedAgentId: 'agent-1', createdAt: '2026-07-09T09:00:00Z', updatedAt: '2026-07-09T09:45:00Z' },
+    { id: 't4', squadId: 'squad-1', title: 'Confirmar reserva hotel Marrechão Palace', description: 'Hotel confirmado, voucher enviado ao cliente.', priority: 'P3', status: 'concluido', assignedAgentId: 'agent-2', createdAt: '2026-07-08T14:00:00Z', updatedAt: '2026-07-08T16:00:00Z' },
+  ];
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const moveTask = (taskId: string, status: Task['status']) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status, updatedAt: new Date().toISOString() } : t));
+  };
+  // ── Squad Templates (Marketplace) ──────────────────────────────────────────────
+  const squadTemplates: SquadTemplate[] = [
+    {
+      id: 'tpl-suporte', emoji: '🎧', name: 'Squad de Suporte', useCase: 'Atendimento ao cliente',
+      description: 'Time completo para atender chamados: triagem inteligente, resolução N1/N2 e coach de qualidade.',
+      tags: ['suporte', 'atendimento', 'helpdesk'],
+      agents: [
+        { role: 'orchestrator', name: 'Orquestrador de Suporte', profile: 'Gerencia o fluxo de tickets e SLA.', masterTemplateKey: 'Agente de Suporte' },
+        { role: 'triagem', name: 'Agente de Triagem', profile: 'Classifica urgência e tipo do chamado (P1-P4).', masterTemplateKey: 'Agente de Suporte' },
+        { role: 'especialista', name: 'Agente N1', profile: 'Resolve dúvidas frequentes usando a KB.', masterTemplateKey: 'Agente de Suporte' },
+        { role: 'especialista', name: 'Agente N2', profile: 'Escalada técnica: loga sistemas e executa ações via MCP.', masterTemplateKey: 'Agente de Suporte' },
+        { role: 'coach', name: 'Agente Coach', profile: 'Audita qualidade e evolui os agentes.', masterTemplateKey: 'Agente de Suporte' },
+      ],
+    },
+    {
+      id: 'tpl-viagens', emoji: '✈️', name: 'Squad de Viagens', useCase: 'Agência de turismo',
+      description: 'Da consulta ao pacote fechado: Concierge escuta o cliente, Roteirista cria o roteiro, Emissor orça.',
+      tags: ['viagens', 'turismo', 'roteiros'],
+      agents: [
+        { role: 'orchestrator', name: 'Concierge', profile: 'Atende o cliente e coleta preferências da viagem.', masterTemplateKey: 'Agente de Vendas' },
+        { role: 'especialista', name: 'Roteirista', profile: 'Monta itinerário dia a dia com Google Maps e pesquisa.', masterTemplateKey: 'Template Padrão' },
+        { role: 'executor', name: 'Emissor / Orçamentista', profile: 'Busca voos/hotéis via API e fecha o preço.', masterTemplateKey: 'Template Padrão' },
+      ],
+    },
+    {
+      id: 'tpl-vendas', emoji: '💼', name: 'Squad de Vendas', useCase: 'Pipeline comercial',
+      description: 'Qualifica leads, negocia propostas e fecha contratos. Financeiro só processa após aprovação humana.',
+      tags: ['vendas', 'comercial', 'crm'],
+      agents: [
+        { role: 'orchestrator', name: 'SDR Orquestrador', profile: 'Distribui leads e acompanha pipeline.', masterTemplateKey: 'Agente de Vendas' },
+        { role: 'especialista', name: 'Qualificador', profile: 'Entende a necessidade e qualifica o lead.', masterTemplateKey: 'Agente de Vendas' },
+        { role: 'especialista', name: 'Negociador', profile: 'Apresenta proposta e contorna objeções.', masterTemplateKey: 'Agente de Vendas' },
+        { role: 'executor', name: 'Agente Financeiro', profile: 'Processa cobrança após aprovação humana.', masterTemplateKey: 'Template Padrão' },
+      ],
+    },
+    {
+      id: 'tpl-dev', emoji: '🛠️', name: 'Squad de Dev', useCase: 'Engenharia de software',
+      description: 'Time ágil de desenvolvimento: Planejador quebra a tarefa, Dev implementa, QA valida.',
+      tags: ['desenvolvimento', 'engenharia', 'qa'],
+      agents: [
+        { role: 'orchestrator', name: 'Tech Lead', profile: 'Quebra requerimentos em tasks e revisa PRs.', masterTemplateKey: 'Template Padrão' },
+        { role: 'especialista', name: 'Dev Backend', profile: 'Implementa APIs e lógica de negócio.', masterTemplateKey: 'Template Padrão' },
+        { role: 'especialista', name: 'Dev Frontend', profile: 'Constrói interfaces e componentes React.', masterTemplateKey: 'Template Padrão' },
+        { role: 'coach', name: 'QA Engineer', profile: 'Testa funcionalidades e reporta bugs.', masterTemplateKey: 'Agente de Suporte' },
+      ],
+    },
+  ];
+  const installSquadTemplate = (templateId: string) => {
+    const tpl = squadTemplates.find(t => t.id === templateId);
+    if (!tpl) return;
+    // Create agents for each role
+    const createdAgents: Agent[] = tpl.agents.map((a, i) => ({
+      id: `agent-tpl-${templateId}-${i}-${Date.now()}`,
+      model: i === 0 ? 'Gemini 3.5 Pro' : 'Gemini 3.5 Flash',
+      temperature: 0.3,
+      master_template_key: a.masterTemplateKey,
+      is_active: true,
+      channel: 'Web',
+      status: 'active' as const,
+      createdAt: new Date().toISOString(),
+      integrations: { discord: false, telegram: false, slack: false, whatsapp: false, webWidget: true },
+      spec: {
+        identity: { agent_name: a.name, agent_profile: a.profile, agent_introduction: `Olá, sou ${a.name}. Como posso ajudar?`, agent_goal: a.profile },
+        behavior: { max_chars: 800, max_questions_per_message: 2, language: 'Português', allowed_emojis: true, behaviour_rules: 'Seja útil, objetivo e respeitoso.' },
+        security: { security_rules: 'Não compartilhe dados sensíveis.', forbid_final_answer: false, anti_prompt_injection: true, jailbreak_response: 'Não posso fazer isso.' },
+        context: { company_name: 'ACME Holding', segment: tpl.useCase, opening_hours: '24/7', user_general_defaults: 'Clientes e usuários', crm_information: '' },
+        planning: { roteiro: '', decision_rules: '', default_current_goal: a.profile, default_agent_stage: a.role, default_next_action: 'aguardar_mensagem' },
+        action: { action_general_infos: '', tools: [], knowledge_bases: [] },
+        response: { task: a.profile, output_rules: 'Mensagens curtas e objetivas.' },
+      },
+    }));
+    setAgents(prev => [...prev, ...createdAgents]);
+    // Create the squad
+    const orchAgent = createdAgents[0];
+    createSquad({
+      name: tpl.name,
+      description: tpl.description,
+      orchestratorAgentId: orchAgent.id,
+      members: createdAgents.map((a, i) => ({ agentId: a.id, role: tpl.agents[i].role as any, allowedTools: [] })),
+      assignmentRules: [],
+      status: 'active',
+    });
+  };
+  // ────────────────────────────────────────────────────────────────────────
+
   const [agents, setAgents] = useState<Agent[]>(initialAgents);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -1200,6 +1356,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         creatorMasterTemplateKey,
         setCreatorMasterTemplateKey,
         selectCreatorTemplate,
+        squads,
+        createSquad,
+        deleteSquad,
+        addAgentToSquad,
+        removeAgentFromSquad,
+        updateSquad,
+        tasks,
+        moveTask,
+        squadTemplates,
+        installSquadTemplate,
       }}
     >
       {children}

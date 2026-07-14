@@ -186,6 +186,7 @@
   transition: color var(--transition-fast);
 }
 
+
 .sidebar-footer {
   border-top: 1px solid var(--border-color);
   padding-top: var(--spacing-md);

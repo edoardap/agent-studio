@@ -1,9 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useApp, deriveChannel, DEFAULT_INTEGRATIONS } from '../context/AppContext';
-import { ChatBubble } from '../components/chat/ChatBubble';
-import { ChatInput } from '../components/chat/ChatInput';
+
 import { StepProgress } from '../components/dashboard/StepProgress';
-import { Layers, Trash2, Code, Plus, Eye, X, Zap, AlertCircle, ArrowLeft, ArrowRight, Check, Pencil } from 'lucide-react';
+import { Layers, Code, Eye, X, Zap, AlertCircle, ArrowLeft, ArrowRight, Check, Pencil } from 'lucide-react';
 import {
   compilePromptSkeleton,
   PREVIEW_RUNTIME_VALUES,
@@ -23,7 +22,7 @@ export const Factory: React.FC = () => {
     lastUpdatedFields,
     clearLastUpdatedFields,
     updateSpecField,
-    sendMessageToCreator, 
+
     createAgentFromSpec, 
     resetCreatorChat,
     creatorMasterTemplateKey,
@@ -650,22 +649,7 @@ ${previewSkeleton}`;
 
   return (
     <div className="factory-page fade-in">
-      {/* Central Chat Interface */}
-      <div className="factory-chat-container">
-        <div className="factory-chat-messages">
-          {creatorConversation.messages.map((msg) => (
-            <ChatBubble key={msg.id} message={msg} />
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-        
-        <ChatInput 
-          onSend={sendMessageToCreator} 
-          placeholder="Descreva sua ideia para o copiloto..."
-        />
-      </div>
 
-      {/* Right Specification Status Panel */}
       <div className="factory-spec-panel">
         <div className="spec-panel-title">
           <Layers size={18} />

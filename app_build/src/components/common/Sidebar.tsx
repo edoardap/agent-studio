@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { Home, Wrench, Bot, Settings, LogOut, Sparkles, Layers, ShieldCheck, ScrollText, Cpu } from 'lucide-react';
+import { Home, Bot, Settings, LogOut, Sparkles, Layers, ShieldCheck, ScrollText, Cpu, Map, Store, Zap } from 'lucide-react';
 import './Sidebar.css';
 
 export const Sidebar: React.FC = () => {
@@ -35,24 +35,40 @@ export const Sidebar: React.FC = () => {
           </button>
         </div>
 
-        {/* Menu Section */}
+        {/* Main Menu */}
         <div className="sidebar-menu-section">
           <div className="sidebar-menu-title">Trabalhar</div>
-          
+
           <button
             onClick={() => setActiveView('home')}
             className={`sidebar-menu-item ${activeView === 'home' ? 'active' : ''}`}
           >
             <Home className="sidebar-menu-icon" />
-            <span>Início</span>
+            <span>Planejador</span>
           </button>
 
           <button
-            onClick={() => setActiveView('factory')}
-            className={`sidebar-menu-item ${activeView === 'factory' ? 'active' : ''}`}
+            onClick={() => setActiveView('marketplace')}
+            className={`sidebar-menu-item ${activeView === 'marketplace' ? 'active' : ''}`}
           >
-            <Wrench className="sidebar-menu-icon" />
-            <span>Fábrica de Agentes</span>
+            <Store className="sidebar-menu-icon" />
+            <span>Marketplace</span>
+          </button>
+
+          <button
+            onClick={() => setActiveView('organograma')}
+            className={`sidebar-menu-item ${activeView === 'organograma' ? 'active' : ''}`}
+          >
+            <Map className="sidebar-menu-icon" />
+            <span>Organograma</span>
+          </button>
+
+          <button
+            onClick={() => setActiveView('simulator')}
+            className={`sidebar-menu-item ${activeView === 'simulator' ? 'active' : ''}`}
+          >
+            <Zap className="sidebar-menu-icon" />
+            <span>Simulador</span>
           </button>
 
           <button
@@ -60,7 +76,7 @@ export const Sidebar: React.FC = () => {
             className={`sidebar-menu-item ${activeView === 'agents' ? 'active' : ''}`}
           >
             <Bot className="sidebar-menu-icon" />
-            <span>Agentes Criados</span>
+            <span>Agentes</span>
           </button>
 
           <button
@@ -72,7 +88,7 @@ export const Sidebar: React.FC = () => {
           </button>
         </div>
 
-        {/* Advanced-only: Engine / Motor section */}
+        {/* Advanced-only section */}
         {isAdvanced && (
           <div className="sidebar-menu-section">
             <div className="sidebar-menu-title">Motor (Avançado)</div>

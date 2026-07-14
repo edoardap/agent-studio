@@ -1,12 +1,16 @@
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/common/Sidebar';
 import { TenantSelector } from './components/dashboard/TenantSelector';
-import { Home } from './pages/Home';
+import { PlannerChat } from './pages/PlannerChat';
 import { Factory } from './pages/Factory';
 import { AgentsList } from './pages/AgentsList';
 import { ChatAgent } from './pages/ChatAgent';
 import { Templates } from './pages/Templates';
 import { Integrations } from './pages/Integrations';
+import { Squads } from './pages/Squads';
+import { Marketplace } from './pages/Marketplace';
+import { Organograma } from './pages/Organograma';
+import { SquadSimulator } from './pages/SquadSimulator';
 import './App.css';
 
 function MainAppContent() {
@@ -15,9 +19,14 @@ function MainAppContent() {
   const renderActiveView = () => {
     switch (activeView) {
       case 'home':
-        return <Home />;
+        return <PlannerChat isSidebarMode={false} />;
       case 'factory':
-        return <Factory />;
+        return (
+          <div className="planner-factory-split">
+            <PlannerChat isSidebarMode={true} />
+            <Factory />
+          </div>
+        );
       case 'agents':
         return <AgentsList />;
       case 'chat-agent':
@@ -26,8 +35,16 @@ function MainAppContent() {
         return <Templates />;
       case 'integrations':
         return <Integrations />;
+      case 'squads':
+        return <Squads />;
+      case 'marketplace':
+        return <Marketplace />;
+      case 'organograma':
+        return <Organograma />;
+      case 'simulator':
+        return <SquadSimulator />;
       default:
-        return <Home />;
+        return <Organograma />;
     }
   };
 

@@ -1,0 +1,442 @@
+/* ─── Layout ─────────────────────────────────────────────────────────────── */
+.squads-page {
+  display: flex;
+  height: 100%;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* ─── Left Sidebar ───────────────────────────────────────────────────────── */
+.squads-sidebar {
+  width: 240px;
+  min-width: 240px;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-main);
+}
+
+.squads-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 16px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.squads-sidebar-header h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.squads-new-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+.squads-new-btn:hover { background: var(--primary-light); }
+
+.squads-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.squads-empty-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 24px 12px;
+}
+
+.squad-list-item {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.squad-list-item:hover { background: var(--bg-app); }
+.squad-list-item.active {
+  background: var(--primary-light);
+  border-color: var(--primary-color);
+}
+
+.squad-list-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.squad-list-item-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.squad-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.squad-list-item-meta {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+/* ─── Main Area ──────────────────────────────────────────────────────────── */
+.squads-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.squads-no-selection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex: 1;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.squads-no-selection h3 { font-size: 1rem; color: var(--text-primary); margin: 0; }
+.squads-no-selection p  { font-size: 0.82rem; margin: 0; }
+
+/* ─── Squad Header ───────────────────────────────────────────────────────── */
+.squad-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.squad-detail-header h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.squad-detail-header p {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.squad-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.squad-status-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1.5px solid;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.squad-danger-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ef4444;
+  background: none;
+  border: 1px solid #ef444466;
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.squad-danger-btn:hover { background: #ef444415; }
+
+/* ─── Sections ───────────────────────────────────────────────────────────── */
+.squad-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.squad-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.squad-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  background: none;
+  border: 1px solid var(--primary-color);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+  margin-left: auto;
+  transition: background 0.15s;
+}
+.squad-add-btn:hover { background: var(--primary-light); }
+
+/* ─── Organogram (CSS-only) ─────────────────────────────────────────────── */
+.squad-orgchart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 20px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  min-height: 180px;
+}
+
+.org-orchestrator-row {
+  display: flex;
+  justify-content: center;
+}
+
+/* Vertical line from orchestrator down */
+.org-connector-vertical {
+  width: 2px;
+  height: 32px;
+  background: var(--border-color);
+  margin: 0 auto;
+}
+
+/* Horizontal crossbar above members */
+.org-members-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  position: relative;
+}
+
+.org-connector-horizontal {
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: var(--border-color);
+}
+
+.org-member-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* Short vertical stub above each member card */
+.org-connector-stub {
+  width: 2px;
+  height: 20px;
+  background: var(--border-color);
+}
+
+/* ─── Org Node ───────────────────────────────────────────────────────────── */
+.org-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  min-width: 140px;
+  text-align: center;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-main);
+  transition: box-shadow 0.15s;
+}
+
+.org-node.orchestrator {
+  border-color: #f59e0b66;
+  background: linear-gradient(135deg, #1e1e2f, #252540);
+  box-shadow: 0 0 0 3px #f59e0b22;
+  min-width: 180px;
+}
+
+.org-node.member {
+  min-width: 140px;
+}
+.org-node.member:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+.org-node-role {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.org-node-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.org-node-model {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.org-node-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 2px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+}
+.org-node-remove:hover { color: #ef4444; background: #ef444415; }
+
+/* ─── Assignment Rules ───────────────────────────────────────────────────── */
+.squad-rules-empty {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  background: var(--bg-app);
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-color);
+}
+
+.squad-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.squad-rule-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: border-color 0.15s;
+}
+.squad-rule-card:hover { border-color: var(--primary-color); }
+
+.rule-index {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  min-width: 20px;
+}
+
+.rule-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rule-condition {
+  font-size: 0.75rem;
+  color: #60a5fa;
+  background: #1e3a5f44;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+}
+
+.rule-action {
+  font-size: 0.75rem;
+  color: #34d399;
+  background: #064e3b44;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+}
+
+.rule-arrow {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.rule-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  transition: color 0.15s;
+}
+.rule-delete-btn:hover { color: #ef4444; }
+
+/* ─── Modal ──────────────────────────────────────────────────────────────── */
+.squad-modal {
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  width: 480px;
+  max-width: 95vw;
+  display: flex;
+  flex-direction: column;
+}
+
+.squad-modal-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

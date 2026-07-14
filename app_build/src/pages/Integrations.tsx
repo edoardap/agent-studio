@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import type { Tool } from '../types';
-import { Terminal, Cpu, Plus, Save, Trash2, Users, Globe, X, Check, Settings, ArrowRight } from 'lucide-react';
+import { Terminal, Cpu, Plus, Save, Trash2, Users, Globe, X, Check, Settings } from 'lucide-react';
 import './Integrations.css';
 
 export const Integrations: React.FC = () => {

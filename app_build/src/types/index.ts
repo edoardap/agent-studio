@@ -1,3 +1,41 @@
+// ─── Task / Kanban ─────────────────────────────────────────────────────────
+
+export type TaskPriority = 'P1' | 'P2' | 'P3' | 'P4';
+export type TaskStatus = 'entrada' | 'em_andamento' | 'aguardando_humano' | 'concluido';
+
+export interface Task {
+  id: string;
+  squadId: string;
+  title: string;
+  description: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  assignedAgentId?: string;  // Which agent is handling this task
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Marketplace Squad Template ─────────────────────────────────────────────
+
+export interface SquadTemplateAgent {
+  role: string;           // ex: 'orchestrator', 'especialista'
+  name: string;           // ex: 'Agente de Triagem'
+  profile: string;        // Short description
+  masterTemplateKey: string;
+}
+
+export interface SquadTemplate {
+  id: string;
+  emoji: string;
+  name: string;
+  description: string;
+  useCase: string;        // ex: 'Atendimento ao cliente'
+  agents: SquadTemplateAgent[];
+  tags: string[];
+}
+
+// ─── Tenant ─────────────────────────────────────────────────────────────────
+
 export interface Tenant {
   id: string;
   name: string;
@@ -112,6 +150,43 @@ export interface Agent {
     webWidget: boolean;
   };
 }
+
+// ─── Squad / Orquestração ──────────────────────────────────────────────────
+
+export type SquadMemberRole =
+  | 'orchestrator'
+  | 'triagem'
+  | 'especialista'
+  | 'executor'
+  | 'coach'
+  | 'suporte';
+
+export interface SquadMember {
+  agentId: string;
+  role: SquadMemberRole;
+  /** Tools que este membro tem permissão de usar dentro da squad */
+  allowedTools: string[];
+}
+
+export interface AssignmentRule {
+  id: string;
+  condition: string;   // ex: "ticket.priority == 'P1'"
+  action: string;      // ex: "atribuir_para(N2) + alertar_humano"
+}
+
+export interface Squad {
+  id: string;
+  name: string;
+  description: string;
+  /** ID do agente que atua como orquestrador (CEO/Squad Manager) */
+  orchestratorAgentId: string;
+  members: SquadMember[];
+  assignmentRules: AssignmentRule[];
+  status: 'active' | 'draft' | 'paused';
+  createdAt: string;
+}
+
+// ─── Conversation ──────────────────────────────────────────────────────────
 
 export interface Message {
   id: string;

@@ -1,7 +1,7 @@
 .factory-page {
   display: flex;
   height: 100%;
-  width: 100%;
+  width: auto;
   overflow: hidden;
   background-color: var(--bg-app);
 }
@@ -25,13 +25,13 @@
 }
 
 .factory-spec-panel {
-  width: 440px;
-  background-color: var(--bg-app); /* Tom de branco/off-white que combina com o restante do aplicativo */
+  width: 500px;
+  max-width: 100%;
+  background-color: var(--bg-app); 
   display: flex;
   flex-direction: column;
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   gap: var(--spacing-md);
-  flex-shrink: 0;
   overflow-y: auto;
   border-left: 1px solid var(--border-color);
 }
