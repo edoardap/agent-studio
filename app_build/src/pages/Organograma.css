@@ -179,6 +179,188 @@
 .rf-squad-status.draft  { background: #78350f55; color: #f59e0b; }
 .rf-squad-status.paused { background: #7f1d1d55; color: #ef4444; }
 
+/* Nó ativo durante uma execução de teste (SquadExecutor) */
+.rf-node.executing {
+  border-color: #22d3ee !important;
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.25), 0 0 24px rgba(34, 211, 238, 0.55) !important;
+  animation: node-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes node-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
+}
+
+.rf-node-executing-badge {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #22d3ee;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Test Drawer (roda a squad no próprio canvas, estilo n8n) ──────────── */
+.sistema-test-drawer {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  max-width: 640px;
+  max-height: 380px;
+  background: rgba(13, 13, 20, 0.97);
+  backdrop-filter: blur(14px);
+  border: 1px solid #333;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  animation: drawerSlideUp 0.2s ease;
+  z-index: 20;
+}
+
+@keyframes drawerSlideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.test-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #2a2a3e;
+  flex-shrink: 0;
+}
+
+.test-drawer-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #93c5fd;
+}
+
+.test-drawer-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.test-drawer-clear-btn {
+  font-size: 0.68rem;
+  color: #64748b;
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.test-drawer-clear-btn:hover:not(:disabled) { color: #e2e8f0; border-color: #555; }
+.test-drawer-clear-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.test-drawer-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 120px;
+}
+
+.test-drawer-empty {
+  font-size: 0.78rem;
+  color: #64748b;
+  text-align: center;
+  margin: auto;
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+.test-msg {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  padding: 7px 10px;
+  border-radius: 8px;
+  max-width: 88%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.test-msg.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #7c3aed, #3b82f6);
+  color: #fff;
+}
+
+.test-msg.agent {
+  align-self: flex-start;
+  background: #1a1a2e;
+  border: 1px solid #333;
+  color: #e2e8f0;
+}
+
+.test-msg.internal {
+  align-self: flex-start;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px dashed rgba(245, 158, 11, 0.35);
+  color: #d8c58f;
+  font-style: italic;
+}
+
+.test-msg.system {
+  align-self: center;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.test-msg-sender {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+
+.test-msg.typing {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.test-typing-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+.test-typing-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #64748b;
+  animation: typingDot 1.2s infinite;
+}
+.test-typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.test-typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typingDot {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+.test-drawer-input {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid #2a2a3e;
+  flex-shrink: 0;
+}
+
+.test-drawer-input .form-input {
+  flex: 1;
+}
+
 /* ─── Right Detail Panel ─────────────────────────────────────────────────── */
 .sistema-detail {
   width: 320px;

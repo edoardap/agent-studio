@@ -20,9 +20,10 @@ import { useApp } from '../context/AppContext';
 import type { Squad, SquadMemberRole } from '../types';
 import {
   Crown, Zap, BookOpen, Wrench, UserCheck, Shield,
-  Plus, X, Trash2, Settings
+  Plus, X, Trash2, Settings, PlayCircle, Send
 } from 'lucide-react';
 import { Kanban } from './Kanban';
+import { SquadExecutor, type ConversationState } from '../services/SquadExecutor';
 import './Organograma.css';
 
 /* ─── Role metadata ────────────────────────────────────────────────────── */
@@ -39,7 +40,10 @@ const ROLE_META: Record<SquadMemberRole, { label: string; color: string; glow: s
 const OrchestratorNode = ({ data }: { data: any }) => {
   const meta = ROLE_META['orchestrator'];
   return (
-    <div className="rf-node orchestrator" style={{ boxShadow: `0 0 20px ${meta.glow}` }}>
+    <div
+      className={`rf-node orchestrator ${data.isExecuting ? 'executing' : ''}`}
+      style={{ boxShadow: `0 0 20px ${meta.glow}` }}
+    >
       <Handle type="source" position={Position.Bottom} style={{ background: meta.color }} />
       <div className="rf-role-badge" style={{ background: meta.color }}>
         <Crown size={10} /> {meta.label}
@@ -47,6 +51,7 @@ const OrchestratorNode = ({ data }: { data: any }) => {
       <div className="rf-node-avatar">{data.initials}</div>
       <div className="rf-node-name">{data.name}</div>
       <div className="rf-node-model">{data.model}</div>
+      {data.isExecuting && <div className="rf-node-executing-badge">executando…</div>}
     </div>
   );
 };
@@ -63,7 +68,10 @@ const MemberNode = ({ data }: { data: any }) => {
     suporte:      <Shield size={10} />,
   };
   return (
-    <div className="rf-node member" style={{ borderColor: `${meta.color}55` }}>
+    <div
+      className={`rf-node member ${data.isExecuting ? 'executing' : ''}`}
+      style={{ borderColor: `${meta.color}55` }}
+    >
       <Handle type="target" position={Position.Top} style={{ background: meta.color }} />
       <div className="rf-role-badge" style={{ background: meta.color }}>
         {icons[data.role as SquadMemberRole]} {meta.label}
@@ -73,6 +81,7 @@ const MemberNode = ({ data }: { data: any }) => {
       </div>
       <div className="rf-node-name">{data.name}</div>
       <div className="rf-node-model">{data.model}</div>
+      {data.isExecuting && <div className="rf-node-executing-badge">executando…</div>}
     </div>
   );
 };
@@ -94,9 +103,12 @@ const nodeTypes: NodeTypes = {
 };
 
 /* ─── Build ReactFlow nodes/edges from squads ────────────────────────────── */
+/** Chave do mapa: `${squadId}::${agentId}` → nodeId. Escopado por squad para não colidir
+ *  quando o mesmo agente é recrutado em mais de uma squad. */
 function buildGraph(squads: Squad[], agents: any[], tasks: any[]) {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
+  const agentNodeMap: Record<string, string> = {};
 
   const getAgent = (id: string) => agents.find((a: any) => a.id === id);
   const initials = (name: string) => name.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
@@ -127,8 +139,9 @@ function buildGraph(squads: Squad[], agents: any[], tasks: any[]) {
     // Orchestrator node
     if (orch) {
       const orchAgent = getAgent(orch.agentId);
+      const orchNodeId = `node-${squad.id}-orch`;
       nodes.push({
-        id: `node-${squad.id}-orch`,
+        id: orchNodeId,
         type: 'orchestrator',
         position: { x: centerX - 90, y: squadY },
         data: {
@@ -137,6 +150,7 @@ function buildGraph(squads: Squad[], agents: any[], tasks: any[]) {
           initials: orchAgent ? initials(orchAgent.spec.identity.agent_name) : 'OR',
         },
       });
+      agentNodeMap[`${squad.id}::${orch.agentId}`] = orchNodeId;
     }
 
     // Member nodes
@@ -157,6 +171,7 @@ function buildGraph(squads: Squad[], agents: any[], tasks: any[]) {
           initials: memberAgent ? initials(memberAgent.spec.identity.agent_name) : 'AG',
         },
       });
+      agentNodeMap[`${squad.id}::${member.agentId}`] = nodeId;
 
       // Edge from orchestrator to member
       if (orch) {
@@ -174,20 +189,17 @@ function buildGraph(squads: Squad[], agents: any[], tasks: any[]) {
     squadOffsetX += totalWidth + 200;
   });
 
-  return { nodes, edges };
+  return { nodes, edges, agentNodeMap };
 }
 
 /* ─── Organograma Component ─────────────────────────────────────────────────── */
 export const Organograma: React.FC = () => {
   const { squads, agents, tasks, createSquad, deleteSquad, addAgentToSquad, removeAgentFromSquad, updateSquad, setActiveView } = useApp();
 
-  const { nodes: initNodes, edges: initEdges } = useMemo(
-    () => buildGraph(squads, agents, tasks),
-    [squads, agents, tasks]
-  );
+  const graph = useMemo(() => buildGraph(squads, agents, tasks), [squads, agents, tasks]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(graph.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(graph.edges);
   const [selectedSquadId, setSelectedSquadId] = useState<string | null>(squads[0]?.id ?? null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
@@ -201,11 +213,76 @@ export const Organograma: React.FC = () => {
   const [showRuleModal, setShowRuleModal] = useState(false);
   const [viewTasksSquadId, setViewTasksSquadId] = useState<string | null>(null);
 
-  // Rebuild nodes when squads change
-  const { nodes: freshNodes, edges: freshEdges } = useMemo(() => buildGraph(squads, agents, tasks), [squads, agents, tasks]);
-  React.useEffect(() => { setNodes(freshNodes); setEdges(freshEdges); }, [squads, agents, tasks]);
+  // Rebuild nodes/edges whenever squads/agents/tasks change
+  React.useEffect(() => { setNodes(graph.nodes); setEdges(graph.edges); }, [graph]);
 
   const onConnect = useCallback((params: Connection) => setEdges(eds => addEdge(params, eds)), []);
+
+  /* ─── Executor embutido (roda a squad no mesmo canvas, estilo n8n) ────── */
+  const executorRef = React.useRef(new SquadExecutor());
+  const [testDrawerOpen, setTestDrawerOpen] = useState(false);
+  const [testInput, setTestInput] = useState('');
+  const [testMessages, setTestMessages] = useState<Array<{ id: string; type: 'user' | 'agent' | 'internal' | 'system'; sender?: string; content: string }>>([]);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executingNodeId, setExecutingNodeId] = useState<string | null>(null);
+  const [conversationState, setConversationState] = useState<ConversationState | undefined>(undefined);
+
+  // Reseta a conversa de teste ao trocar de squad
+  React.useEffect(() => {
+    setTestMessages([]);
+    setConversationState(undefined);
+    setExecutingNodeId(null);
+  }, [selectedSquadId]);
+
+  // Acende/apaga o nó ativo no canvas conforme o executor avança
+  React.useEffect(() => {
+    setNodes(nds => nds.map(n => {
+      const shouldHighlight = n.id === executingNodeId;
+      if (Boolean(n.data?.isExecuting) === shouldHighlight) return n;
+      return { ...n, data: { ...n.data, isExecuting: shouldHighlight } };
+    }));
+  }, [executingNodeId, setNodes]);
+
+  const handleTestSend = async () => {
+    const message = testInput.trim();
+    if (!message || !selectedSquad || isExecuting) return;
+
+    setTestInput('');
+    setTestMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: message }]);
+    setIsExecuting(true);
+
+    try {
+      const result = await executorRef.current.execute(
+        selectedSquad,
+        agents,
+        message,
+        'test-user',
+        conversationState,
+        (entry) => {
+          const nodeId = entry.agentId ? graph.agentNodeMap[`${selectedSquad.id}::${entry.agentId}`] : null;
+          setExecutingNodeId(nodeId ?? null);
+
+          if (!entry.output) return;
+          const type: 'agent' | 'internal' | 'system' =
+            entry.internalOnly ? 'internal' : (entry.agentName === 'RuleEngine' || entry.agentName === 'System' ? 'system' : 'agent');
+          setTestMessages(prev => [...prev, {
+            id: `log-${entry.step}-${Date.now()}`,
+            type,
+            sender: type === 'system' ? undefined : entry.agentName,
+            content: entry.output!,
+          }]);
+        }
+      );
+
+      setConversationState(result.updatedState);
+      if (!result.success) {
+        setTestMessages(prev => [...prev, { id: `err-${Date.now()}`, type: 'system', content: result.publicResponse }]);
+      }
+    } finally {
+      setIsExecuting(false);
+      setExecutingNodeId(null);
+    }
+  };
 
   const selectedSquad = squads.find(s => s.id === selectedSquadId) ?? null;
   const availableAgents = agents.filter(a => !selectedSquad?.members.some(m => m.agentId === a.id));
@@ -283,6 +360,64 @@ export const Organograma: React.FC = () => {
             </div>
           </Panel>
         </ReactFlow>
+
+        {/* Test Drawer — roda a squad selecionada no próprio canvas (estilo n8n) */}
+        {testDrawerOpen && selectedSquad && (
+          <div className="sistema-test-drawer">
+            <div className="test-drawer-header">
+              <div className="test-drawer-title">
+                <PlayCircle size={14} />
+                <span>Testar: {selectedSquad.name}</span>
+              </div>
+              <div className="test-drawer-actions">
+                <button
+                  className="test-drawer-clear-btn"
+                  onClick={() => { setTestMessages([]); setConversationState(undefined); }}
+                  disabled={testMessages.length === 0 || isExecuting}
+                >
+                  Limpar
+                </button>
+                <button className="modal-close-btn" onClick={() => setTestDrawerOpen(false)}><X size={14} /></button>
+              </div>
+            </div>
+
+            <div className="test-drawer-messages">
+              {testMessages.length === 0 ? (
+                <div className="test-drawer-empty">
+                  Digite uma mensagem para simular um cliente conversando com essa squad — você vai ver os nós do
+                  organograma acendendo conforme a execução passa por cada agente.
+                </div>
+              ) : (
+                testMessages.map(msg => (
+                  <div key={msg.id} className={`test-msg ${msg.type}`}>
+                    {msg.sender && <span className="test-msg-sender">{msg.sender}</span>}
+                    <span className="test-msg-content">{msg.content}</span>
+                  </div>
+                ))
+              )}
+              {isExecuting && (
+                <div className="test-msg system typing">
+                  <span className="test-typing-dots"><span></span><span></span><span></span></span>
+                  Executando…
+                </div>
+              )}
+            </div>
+
+            <div className="test-drawer-input">
+              <input
+                className="form-input"
+                placeholder="Ex: Quero viajar pra Paris em Agosto..."
+                value={testInput}
+                onChange={e => setTestInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleTestSend()}
+                disabled={isExecuting}
+              />
+              <button className="sistema-btn primary" onClick={handleTestSend} disabled={isExecuting || !testInput.trim()}>
+                <Send size={13} /> Enviar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Right detail panel */}
@@ -295,8 +430,16 @@ export const Organograma: React.FC = () => {
             </div>
             <button className="modal-close-btn" onClick={() => setSelectedSquadId(null)}><X size={16} /></button>
           </div>
-          
-          <button className="sistema-btn primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setViewTasksSquadId(selectedSquad.id)}>
+
+          <button
+            className="sistema-btn primary"
+            style={{ width: '100%', justifyContent: 'center' }}
+            onClick={() => setTestDrawerOpen(o => !o)}
+          >
+            <PlayCircle size={13} /> {testDrawerOpen ? 'Fechar Teste' : 'Testar Squad (Executar)'}
+          </button>
+
+          <button className="sistema-btn secondary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setViewTasksSquadId(selectedSquad.id)}>
             Ver Tasks ({tasks.filter(t => t.squadId === selectedSquad.id).length})
           </button>
 
